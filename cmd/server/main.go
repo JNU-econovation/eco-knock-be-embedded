@@ -1,15 +1,27 @@
 package main
 
-import "github.com/gin-gonic/gin"
+import (
+	"eco-knock-be-embedded/internal/challenge/client"
+	"eco-knock-be-embedded/internal/challenge/handler"
+	"eco-knock-be-embedded/internal/challenge/router"
+	"eco-knock-be-embedded/internal/challenge/service"
+	"eco-knock-be-embedded/internal/common/config"
+	"eco-knock-be-embedded/internal/common/middleware"
+
+	"github.com/gin-gonic/gin"
+)
 
 func main() {
 	r := gin.Default()
+	r.Use(middleware.HandleErrors())
 
-	r.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "hello gin",
-		})
-	})
+	conf := config.MustLoad()
 
-	r.Run()
+	challengeClient := client.NewChallengeClient(conf.CentralBackendUrl)
+	challengeService := service.NewChallengeService(challengeClient)
+	challengeHandler := handler.NewChallengeHandler(challengeService)
+
+	router.RegisterChallengeRoutes(r, challengeHandler)
+
+	r.Run(":8080")
 }
