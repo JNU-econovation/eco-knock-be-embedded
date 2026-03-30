@@ -42,7 +42,7 @@ var metas = map[ErrorCode]Meta{
 		Message: "유효하지 않은 액세스 토큰입니다.",
 	},
 	CentralBackendUnavailable: {
-		Domain:  constant.DomainChallenge,
+		Domain:  constant.DomainCommon,
 		Status:  http.StatusServiceUnavailable,
 		Number:  1,
 		Message: "중앙 백엔드를 현재 사용할 수 없습니다.",

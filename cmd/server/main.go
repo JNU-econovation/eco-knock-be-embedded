@@ -1,27 +1,35 @@
 package main
 
 import (
-	"eco-knock-be-embedded/internal/challenge/client"
-	"eco-knock-be-embedded/internal/challenge/handler"
-	"eco-knock-be-embedded/internal/challenge/router"
-	"eco-knock-be-embedded/internal/challenge/service"
 	"eco-knock-be-embedded/internal/common/config"
 	"eco-knock-be-embedded/internal/common/middleware"
+	"fmt"
+	"log"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	_ = godotenv.Load(".env")
+
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	r := gin.Default()
 	r.Use(middleware.HandleErrors())
 
 	conf := config.MustLoad()
 
-	challengeClient := client.NewChallengeClient(conf.CentralBackendUrl)
-	challengeService := service.NewChallengeService(challengeClient)
-	challengeHandler := handler.NewChallengeHandler(challengeService)
+	stopSensorReporter, err := startSensorReporter()
+	if err != nil {
+		return err
+	}
+	defer stopSensorReporter()
 
-	router.RegisterChallengeRoutes(r, challengeHandler)
-
-	r.Run(":8080")
+	return r.Run(fmt.Sprint(":" + strconv.Itoa(conf.ServerPort)))
 }
