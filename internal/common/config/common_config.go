@@ -7,13 +7,16 @@ import (
 )
 
 type CommonConfig struct {
-	CentralBackendUrl string
-	ServerPort        int
+	CentralBackendURL          string
+	ServerPort                 int
+	AllowCentralBackendFailure bool
 }
 
 func MustLoad() CommonConfig {
-	baseURL := os.Getenv("CENTRAL_BACKEND_BASE_URL")
-	if baseURL == "" {
+	allowCentralBackendFailure := parseRequiredBool("ALLOW_CENTRAL_BACKEND_FAILURE", false)
+
+	centralBackendURL := os.Getenv("CENTRAL_BACKEND_BASE_URL")
+	if centralBackendURL == "" && !allowCentralBackendFailure {
 		log.Fatal("CENTRAL_BACKEND_BASE_URL 환경변수가 필요합니다.")
 	}
 
@@ -23,13 +26,27 @@ func MustLoad() CommonConfig {
 	}
 
 	serverPort, err := strconv.Atoi(serverPortString)
-
 	if err != nil {
-		log.Fatal("잘못된 port : ", err)
+		log.Fatal("잘못된 SERVER_PORT 값 : ", err)
 	}
 
 	return CommonConfig{
-		CentralBackendUrl: baseURL,
-		ServerPort:        serverPort,
+		CentralBackendURL:          centralBackendURL,
+		ServerPort:                 serverPort,
+		AllowCentralBackendFailure: allowCentralBackendFailure,
 	}
+}
+
+func parseRequiredBool(key string, defaultValue bool) bool {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		log.Fatal("잘못된 ", key, " 값 : ", err)
+	}
+
+	return parsed
 }
