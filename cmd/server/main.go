@@ -5,7 +5,6 @@ import (
 	"eco-knock-be-embedded/internal/common/middleware"
 	"fmt"
 	"log"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -25,11 +24,11 @@ func run() error {
 
 	conf := config.MustLoad()
 
-	stopSensorReporter, err := startSensorReporter()
+	stopSensorReporter, err := startSensorReporter(conf)
 	if err != nil {
 		return err
 	}
 	defer stopSensorReporter()
 
-	return r.Run(fmt.Sprint(":" + strconv.Itoa(conf.ServerPort)))
+	return r.Run(fmt.Sprintf(":%d", conf.ServerPort))
 }

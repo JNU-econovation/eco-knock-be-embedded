@@ -21,7 +21,7 @@ type SensorInternalDTO struct {
 	Err    error
 }
 
-type SensorClientDTO struct {
+type SensorClientRequest struct {
 	DeviceId int
 	Sample   SampleDTO
 }
