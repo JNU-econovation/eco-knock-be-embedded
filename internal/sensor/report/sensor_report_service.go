@@ -2,7 +2,7 @@ package report
 
 import (
 	"context"
-	"eco-knock-be-embedded/internal/sensor/client"
+	"eco-knock-be-embedded/internal/grpc/sensor"
 	"eco-knock-be-embedded/internal/sensor/dto"
 	"eco-knock-be-embedded/internal/sensor/streaming"
 	"encoding/json"
@@ -13,12 +13,12 @@ import (
 const DeviceId = 1
 
 type SensorReportService struct {
-	client           *client.SensorGRPCClient
+	client           *sensor.Client
 	streamingService *streaming.SensorStreamingService
 }
 
 func New(
-	client *client.SensorGRPCClient,
+	client *sensor.Client,
 	streamingService *streaming.SensorStreamingService,
 ) *SensorReportService {
 	return &SensorReportService{
@@ -36,15 +36,25 @@ func (service *SensorReportService) Run(ctx context.Context) error {
 	for result := range stream {
 		if result.Err != nil {
 			logger.Errorf("센서 스트림 중 에러가 발생했습니다 : %v", result.Err)
+			return result.Err
 		}
 
-		clientDTO := dto.SensorClientDTO{
+		request := dto.SensorClientRequest{
 			DeviceId: DeviceId,
 			Sample:   result.Sample,
 		}
 
-		payload, _ := json.Marshal(clientDTO)
-		logger.Infof("센서 : %s", payload)
+		_, err := service.client.Report(ctx, request)
+
+		if err != nil {
+			logger.Errorf("GRPC 요청 중에 에러가 발생했습니다 : %v", err)
+			return err
+		}
 	}
 	return nil
+}
+
+func (service *SensorReportService) logRequest(request dto.SensorClientRequest) {
+	payload, _ := json.Marshal(request)
+	logger.Infof("센서 request 객체 : %s", payload)
 }
