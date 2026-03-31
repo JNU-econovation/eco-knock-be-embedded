@@ -5,7 +5,7 @@ A skill is a set of local instructions to follow that is stored in a `SKILL.md` 
 Below is the list of repository-local skills that can be used in this project.
 
 ### Available skills
-- `git-commit-korean`: Inspect this repository's git history and current diff, then draft or create git commits that match the local convention. Use when the user asks to write a commit message, make a git commit, summarize changes into a commit, keep commit messages in Korean, or split changes into small logical commits aligned with recent repository history. (file: `C:/Users/we6610/GolandProjects/eco-knock-be-embedded/skills/git-commit-korean/SKILL.md`)
+- `git-commit-korean`: Inspect this repository's git history and current diff, then draft or create git commits that match the local convention. Use when the user asks to write a commit message, make a git commit, summarize changes into a commit, keep commit messages in Korean, or split changes into small logical commits aligned with recent repository history. (file: `./skills/git-commit-korean/SKILL.md`)
 
 ## How to use skills
 - Discovery: The list above is the repository-local skill registry for this project.
