@@ -1,52 +1,97 @@
 package config
 
 import (
+	"bytes"
+	"fmt"
 	"log"
 	"os"
-	"strconv"
+
+	"gopkg.in/yaml.v3"
 )
 
 type CommonConfig struct {
-	CentralBackendURL          string
-	ServerPort                 int
+	ServerHTTPPort             int
+	CentralBackendHost         string
+	CentralBackendHTTPPort     int
+	CentralBackendGRPCPort     int
 	AllowCentralBackendFailure bool
 }
 
-func MustLoad() CommonConfig {
-	allowCentralBackendFailure := parseRequiredBool("ALLOW_CENTRAL_BACKEND_FAILURE", false)
+type yamlConfig struct {
+	Server struct {
+		HTTPPort int `yaml:"http_port"`
+	} `yaml:"server"`
 
-	centralBackendURL := os.Getenv("CENTRAL_BACKEND_BASE_URL")
-	if centralBackendURL == "" && !allowCentralBackendFailure {
-		log.Fatal("CENTRAL_BACKEND_BASE_URL 환경변수가 필요합니다.")
-	}
-
-	serverPortString := os.Getenv("SERVER_PORT")
-	if serverPortString == "" {
-		log.Fatal("SERVER_PORT 환경변수가 필요합니다.")
-	}
-
-	serverPort, err := strconv.Atoi(serverPortString)
-	if err != nil {
-		log.Fatal("잘못된 SERVER_PORT 값 : ", err)
-	}
-
-	return CommonConfig{
-		CentralBackendURL:          centralBackendURL,
-		ServerPort:                 serverPort,
-		AllowCentralBackendFailure: allowCentralBackendFailure,
-	}
+	CentralBackend struct {
+		Host         string `yaml:"host"`
+		HTTPPort     int    `yaml:"http_port"`
+		GRPCPort     int    `yaml:"grpc_port"`
+		AllowFailure bool   `yaml:"allow_failure"`
+	} `yaml:"central_backend"`
 }
 
-func parseRequiredBool(key string, defaultValue bool) bool {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
-	}
-
-	parsed, err := strconv.ParseBool(value)
+func MustLoad(path string) CommonConfig {
+	config, err := Load(path)
 	if err != nil {
-		log.Fatal("잘못된 ", key, " 값 : ", err)
+		log.Fatal(err)
 	}
 
-	return parsed
+	return config
+}
+
+func Load(path string) (CommonConfig, error) {
+	if path == "" {
+		return CommonConfig{}, fmt.Errorf("config path is required")
+	}
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return CommonConfig{}, err
+	}
+
+	raw := yamlConfig{}
+	decoder := yaml.NewDecoder(bytes.NewReader(content))
+	decoder.KnownFields(true)
+
+	if err := decoder.Decode(&raw); err != nil {
+		return CommonConfig{}, err
+	}
+
+	config := CommonConfig{
+		ServerHTTPPort:             raw.Server.HTTPPort,
+		CentralBackendHost:         raw.CentralBackend.Host,
+		CentralBackendHTTPPort:     raw.CentralBackend.HTTPPort,
+		CentralBackendGRPCPort:     raw.CentralBackend.GRPCPort,
+		AllowCentralBackendFailure: raw.CentralBackend.AllowFailure,
+	}
+
+	if err := config.Validate(); err != nil {
+		return CommonConfig{}, err
+	}
+
+	return config, nil
+}
+
+func (config CommonConfig) Validate() error {
+	if config.ServerHTTPPort == 0 {
+		return fmt.Errorf("server.http_port 설정이 필요합니다")
+	}
+
+	if config.AllowCentralBackendFailure {
+		return nil
+	}
+
+	if config.CentralBackendHost == "" {
+		return fmt.Errorf("central_backend.host 설정이 필요합니다")
+	}
+
+	if config.CentralBackendHTTPPort == 0 {
+		return fmt.Errorf("central_backend.http_port 설정이 필요합니다")
+	}
+
+	if config.CentralBackendGRPCPort == 0 {
+		return fmt.Errorf("central_backend.grpc_port 설정이 필요합니다")
+	}
+
+	return nil
 }

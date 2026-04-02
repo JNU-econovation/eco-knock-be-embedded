@@ -11,17 +11,19 @@ import (
 	"eco-knock-be-embedded/internal/sensor/report"
 	"eco-knock-be-embedded/internal/sensor/streaming"
 	"log"
+	"net"
+	"strconv"
 	"time"
 )
 
 func startSensorReporter(commonConfig config.CommonConfig) (func(), error) {
-	if commonConfig.CentralBackendURL == "" && commonConfig.AllowCentralBackendFailure {
+	if commonConfig.CentralBackendHost == "" && commonConfig.AllowCentralBackendFailure {
 		log.Println("central backend address is empty; sensor reporter will be skipped")
 		return func() {}, nil
 	}
 
 	grpcConf := common.GrpcConfig{
-		Address: commonConfig.CentralBackendURL,
+		Address: net.JoinHostPort(commonConfig.CentralBackendHost, formatPort(commonConfig.CentralBackendGRPCPort)),
 		Timeout: 5 * time.Second,
 	}
 
@@ -73,4 +75,8 @@ func startSensorReporter(commonConfig config.CommonConfig) (func(), error) {
 		_ = sensorReader.Close()
 		_ = conn.Close()
 	}, nil
+}
+
+func formatPort(port int) string {
+	return strconv.Itoa(port)
 }
