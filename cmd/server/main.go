@@ -7,12 +7,11 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 )
 
-func main() {
-	_ = godotenv.Load(".env")
+const configPath = "application.yaml"
 
+func main() {
 	if err := run(); err != nil {
 		log.Fatal(err)
 	}
@@ -22,7 +21,7 @@ func run() error {
 	r := gin.Default()
 	r.Use(middleware.HandleErrors())
 
-	conf := config.MustLoad()
+	conf := config.MustLoad(configPath)
 
 	stopSensorReporter, err := startSensorReporter(conf)
 	if err != nil {
@@ -30,5 +29,5 @@ func run() error {
 	}
 	defer stopSensorReporter()
 
-	return r.Run(fmt.Sprintf(":%d", conf.ServerPort))
+	return r.Run(fmt.Sprintf(":%d", conf.ServerHTTPPort))
 }

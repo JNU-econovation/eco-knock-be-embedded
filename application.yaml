@@ -1,0 +1,8 @@
+server:
+  http_port: 19090
+
+central_backend:
+  host: 127.0.0.1
+  http_port: 18080
+  grpc_port: 6565
+  allow_failure: true
