@@ -1,0 +1,4 @@
+﻿interface:
+  display_name: "Raspberry Pi Docker Deploy"
+  short_description: "Deploy this repository to a Raspberry Pi with Docker and verify BME680 I2C readiness."
+  default_prompt: "Use $raspberry-pi-docker-deploy to deploy this repository to a Raspberry Pi and verify Docker and BME680/I2C readiness."
