@@ -1,0 +1,12 @@
+services:
+  server:
+    platform: linux/arm64
+    image: eco-knock-be-embedded:arm64
+    restart: unless-stopped
+    user: "0:0"
+    env_file:
+      - .env
+    devices:
+      - /dev/i2c-1:/dev/i2c-1
+    ports:
+      - "${SERVER_HTTP_PORT}:${SERVER_HTTP_PORT}"
