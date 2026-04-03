@@ -1,0 +1,10 @@
+.git
+.gitignore
+.idea
+dist
+tmp
+coverage
+eco-knock-be-embedded
+skills
+*.log
+*.out
