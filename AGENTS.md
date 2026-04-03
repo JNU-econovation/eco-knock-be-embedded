@@ -6,6 +6,7 @@ Below is the list of repository-local skills that can be used in this project.
 
 ### Available skills
 - `git-commit-korean`: Inspect this repository's git history and current diff, then draft or create git commits that match the local convention. Use when the user asks to write a commit message, make a git commit, summarize changes into a commit, keep commit messages in Korean, or split changes into small logical commits aligned with recent repository history. (file: `./skills/git-commit-korean/SKILL.md`)
+- `raspberry-pi-docker-deploy`: Deploy this repository to a Raspberry Pi with Docker, verify `.env.deploy` and `.env`, run the repository deploy scripts, and diagnose Raspberry Pi Docker or BME680/I2C issues such as missing `/dev/i2c-1` or failed `i2cdetect` results. Use when the user asks to deploy, redeploy, or debug Raspberry Pi execution. (file: `./skills/raspberry-pi-docker-deploy/SKILL.md`)
 
 ## How to use skills
 - Discovery: The list above is the repository-local skill registry for this project.
