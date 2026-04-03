@@ -1,8 +1,12 @@
 server:
-  http_port: 19090
+  http_port: ${SERVER_HTTP_PORT}
 
 central_backend:
-  host: 127.0.0.1
-  http_port: 18080
-  grpc_port: 6565
-  allow_failure: true
+  host: ${CENTRAL_BACKEND_HOST}
+  http_port: ${CENTRAL_BACKEND_HTTP_PORT}
+  grpc_port: ${CENTRAL_BACKEND_GRPC_PORT}
+  allow_failure: ${ALLOW_CENTRAL_BACKEND_FAILURE}
+
+sensor:
+  i2c_device: ${SENSOR_I2C_DEVICE}
+  i2c_address: ${SENSOR_I2C_ADDRESS}

@@ -46,8 +46,8 @@ func startSensorReporter(commonConfig config.CommonConfig) (func(), error) {
 	}
 
 	bme680Conf := bme680config.Config{
-		I2CDevice:      "/dev/i2c-1",
-		I2CAddress:     0x76,
+		I2CDevice:      commonConfig.SensorI2CDevice,
+		I2CAddress:     commonConfig.SensorI2CAddress,
 		HeaterTempC:    300,
 		HeaterDuration: 100 * time.Millisecond,
 		AmbientTempC:   25,
