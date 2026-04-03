@@ -7,11 +7,14 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 const configPath = "application.yaml"
 
 func main() {
+	_ = godotenv.Load(".env")
+
 	if err := run(); err != nil {
 		log.Fatal(err)
 	}
