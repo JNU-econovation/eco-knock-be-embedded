@@ -17,7 +17,7 @@ func TestHandleErrors_AppError(t *testing.T) {
 	router := gin.New()
 	router.Use(HandleErrors())
 	router.GET("/test", WrapErrorHandler(func(context *gin.Context) error {
-		return apperror.New(apperror.AuthorizationHeaderRequired, nil)
+		return apperror.New(apperror.SensorReadFailed, nil)
 	}))
 
 	recorder := httptest.NewRecorder()
@@ -25,8 +25,8 @@ func TestHandleErrors_AppError(t *testing.T) {
 
 	router.ServeHTTP(recorder, request)
 
-	if recorder.Code != http.StatusUnauthorized {
-		t.Fatalf("expected status %d, got %d", http.StatusUnauthorized, recorder.Code)
+	if recorder.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected status %d, got %d", http.StatusServiceUnavailable, recorder.Code)
 	}
 
 	var responseBody struct {
@@ -43,8 +43,8 @@ func TestHandleErrors_AppError(t *testing.T) {
 		t.Fatalf("expected isError=true")
 	}
 
-	if responseBody.ErrorCode != apperror.AuthorizationHeaderRequired.Code() {
-		t.Fatalf("expected error code %s, got %s", apperror.AuthorizationHeaderRequired.Code(), responseBody.ErrorCode)
+	if responseBody.ErrorCode != apperror.SensorReadFailed.Code() {
+		t.Fatalf("expected error code %s, got %s", apperror.SensorReadFailed.Code(), responseBody.ErrorCode)
 	}
 }
 

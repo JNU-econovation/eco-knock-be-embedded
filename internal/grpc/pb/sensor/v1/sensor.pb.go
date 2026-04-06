@@ -21,31 +21,26 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type ReportSensorRequest struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	DeviceId         int32                  `protobuf:"varint,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
-	TemperatureC     float64                `protobuf:"fixed64,2,opt,name=temperature_c,json=temperatureC,proto3" json:"temperature_c,omitempty"`
-	HumidityRh       float64                `protobuf:"fixed64,3,opt,name=humidity_rh,json=humidityRh,proto3" json:"humidity_rh,omitempty"`
-	GasResistanceOhm float64                `protobuf:"fixed64,4,opt,name=gas_resistance_ohm,json=gasResistanceOhm,proto3" json:"gas_resistance_ohm,omitempty"`
-	MeasuredAtUnixMs int64                  `protobuf:"varint,5,opt,name=measured_at_unix_ms,json=measuredAtUnixMs,proto3" json:"measured_at_unix_ms,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+type GetCurrentSensorRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ReportSensorRequest) Reset() {
-	*x = ReportSensorRequest{}
+func (x *GetCurrentSensorRequest) Reset() {
+	*x = GetCurrentSensorRequest{}
 	mi := &file_proto_sensor_v1_sensor_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ReportSensorRequest) String() string {
+func (x *GetCurrentSensorRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ReportSensorRequest) ProtoMessage() {}
+func (*GetCurrentSensorRequest) ProtoMessage() {}
 
-func (x *ReportSensorRequest) ProtoReflect() protoreflect.Message {
+func (x *GetCurrentSensorRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_sensor_v1_sensor_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -57,106 +52,121 @@ func (x *ReportSensorRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ReportSensorRequest.ProtoReflect.Descriptor instead.
-func (*ReportSensorRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetCurrentSensorRequest.ProtoReflect.Descriptor instead.
+func (*GetCurrentSensorRequest) Descriptor() ([]byte, []int) {
 	return file_proto_sensor_v1_sensor_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ReportSensorRequest) GetDeviceId() int32 {
-	if x != nil {
-		return x.DeviceId
-	}
-	return 0
+type GetCurrentSensorResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	TemperatureC     float64                `protobuf:"fixed64,1,opt,name=temperature_c,json=temperatureC,proto3" json:"temperature_c,omitempty"`
+	HumidityRh       float64                `protobuf:"fixed64,2,opt,name=humidity_rh,json=humidityRh,proto3" json:"humidity_rh,omitempty"`
+	GasResistanceOhm float64                `protobuf:"fixed64,3,opt,name=gas_resistance_ohm,json=gasResistanceOhm,proto3" json:"gas_resistance_ohm,omitempty"`
+	Status           uint32                 `protobuf:"varint,4,opt,name=status,proto3" json:"status,omitempty"`
+	GasValid         bool                   `protobuf:"varint,5,opt,name=gas_valid,json=gasValid,proto3" json:"gas_valid,omitempty"`
+	HeatStable       bool                   `protobuf:"varint,6,opt,name=heat_stable,json=heatStable,proto3" json:"heat_stable,omitempty"`
+	MeasuredAtUnixMs int64                  `protobuf:"varint,7,opt,name=measured_at_unix_ms,json=measuredAtUnixMs,proto3" json:"measured_at_unix_ms,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
-func (x *ReportSensorRequest) GetTemperatureC() float64 {
+func (x *GetCurrentSensorResponse) Reset() {
+	*x = GetCurrentSensorResponse{}
+	mi := &file_proto_sensor_v1_sensor_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCurrentSensorResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCurrentSensorResponse) ProtoMessage() {}
+
+func (x *GetCurrentSensorResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_sensor_v1_sensor_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCurrentSensorResponse.ProtoReflect.Descriptor instead.
+func (*GetCurrentSensorResponse) Descriptor() ([]byte, []int) {
+	return file_proto_sensor_v1_sensor_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *GetCurrentSensorResponse) GetTemperatureC() float64 {
 	if x != nil {
 		return x.TemperatureC
 	}
 	return 0
 }
 
-func (x *ReportSensorRequest) GetHumidityRh() float64 {
+func (x *GetCurrentSensorResponse) GetHumidityRh() float64 {
 	if x != nil {
 		return x.HumidityRh
 	}
 	return 0
 }
 
-func (x *ReportSensorRequest) GetGasResistanceOhm() float64 {
+func (x *GetCurrentSensorResponse) GetGasResistanceOhm() float64 {
 	if x != nil {
 		return x.GasResistanceOhm
 	}
 	return 0
 }
 
-func (x *ReportSensorRequest) GetMeasuredAtUnixMs() int64 {
+func (x *GetCurrentSensorResponse) GetStatus() uint32 {
+	if x != nil {
+		return x.Status
+	}
+	return 0
+}
+
+func (x *GetCurrentSensorResponse) GetGasValid() bool {
+	if x != nil {
+		return x.GasValid
+	}
+	return false
+}
+
+func (x *GetCurrentSensorResponse) GetHeatStable() bool {
+	if x != nil {
+		return x.HeatStable
+	}
+	return false
+}
+
+func (x *GetCurrentSensorResponse) GetMeasuredAtUnixMs() int64 {
 	if x != nil {
 		return x.MeasuredAtUnixMs
 	}
 	return 0
 }
 
-type ReportSensorResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Accepted      bool                   `protobuf:"varint,1,opt,name=accepted,proto3" json:"accepted,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ReportSensorResponse) Reset() {
-	*x = ReportSensorResponse{}
-	mi := &file_proto_sensor_v1_sensor_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ReportSensorResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ReportSensorResponse) ProtoMessage() {}
-
-func (x *ReportSensorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_sensor_v1_sensor_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ReportSensorResponse.ProtoReflect.Descriptor instead.
-func (*ReportSensorResponse) Descriptor() ([]byte, []int) {
-	return file_proto_sensor_v1_sensor_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *ReportSensorResponse) GetAccepted() bool {
-	if x != nil {
-		return x.Accepted
-	}
-	return false
-}
-
 var File_proto_sensor_v1_sensor_proto protoreflect.FileDescriptor
 
 const file_proto_sensor_v1_sensor_proto_rawDesc = "" +
 	"\n" +
-	"\x1cproto/sensor/v1/sensor.proto\x12\tsensor.v1\"\xd5\x01\n" +
-	"\x13ReportSensorRequest\x12\x1b\n" +
-	"\tdevice_id\x18\x01 \x01(\x05R\bdeviceId\x12#\n" +
-	"\rtemperature_c\x18\x02 \x01(\x01R\ftemperatureC\x12\x1f\n" +
-	"\vhumidity_rh\x18\x03 \x01(\x01R\n" +
+	"\x1cproto/sensor/v1/sensor.proto\x12\tsensor.v1\"\x19\n" +
+	"\x17GetCurrentSensorRequest\"\x93\x02\n" +
+	"\x18GetCurrentSensorResponse\x12#\n" +
+	"\rtemperature_c\x18\x01 \x01(\x01R\ftemperatureC\x12\x1f\n" +
+	"\vhumidity_rh\x18\x02 \x01(\x01R\n" +
 	"humidityRh\x12,\n" +
-	"\x12gas_resistance_ohm\x18\x04 \x01(\x01R\x10gasResistanceOhm\x12-\n" +
-	"\x13measured_at_unix_ms\x18\x05 \x01(\x03R\x10measuredAtUnixMs\"2\n" +
-	"\x14ReportSensorResponse\x12\x1a\n" +
-	"\baccepted\x18\x01 \x01(\bR\baccepted2`\n" +
-	"\rSensorService\x12O\n" +
-	"\fReportSensor\x12\x1e.sensor.v1.ReportSensorRequest\x1a\x1f.sensor.v1.ReportSensorResponseB;Z9eco-knock-be-embedded/internal/grpc/pb/sensor/v1;sensorpbb\x06proto3"
+	"\x12gas_resistance_ohm\x18\x03 \x01(\x01R\x10gasResistanceOhm\x12\x16\n" +
+	"\x06status\x18\x04 \x01(\rR\x06status\x12\x1b\n" +
+	"\tgas_valid\x18\x05 \x01(\bR\bgasValid\x12\x1f\n" +
+	"\vheat_stable\x18\x06 \x01(\bR\n" +
+	"heatStable\x12-\n" +
+	"\x13measured_at_unix_ms\x18\a \x01(\x03R\x10measuredAtUnixMs2l\n" +
+	"\rSensorService\x12[\n" +
+	"\x10GetCurrentSensor\x12\".sensor.v1.GetCurrentSensorRequest\x1a#.sensor.v1.GetCurrentSensorResponseB;Z9eco-knock-be-embedded/internal/grpc/pb/sensor/v1;sensorpbb\x06proto3"
 
 var (
 	file_proto_sensor_v1_sensor_proto_rawDescOnce sync.Once
@@ -172,12 +182,12 @@ func file_proto_sensor_v1_sensor_proto_rawDescGZIP() []byte {
 
 var file_proto_sensor_v1_sensor_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_proto_sensor_v1_sensor_proto_goTypes = []any{
-	(*ReportSensorRequest)(nil),  // 0: sensor.v1.ReportSensorRequest
-	(*ReportSensorResponse)(nil), // 1: sensor.v1.ReportSensorResponse
+	(*GetCurrentSensorRequest)(nil),  // 0: sensor.v1.GetCurrentSensorRequest
+	(*GetCurrentSensorResponse)(nil), // 1: sensor.v1.GetCurrentSensorResponse
 }
 var file_proto_sensor_v1_sensor_proto_depIdxs = []int32{
-	0, // 0: sensor.v1.SensorService.ReportSensor:input_type -> sensor.v1.ReportSensorRequest
-	1, // 1: sensor.v1.SensorService.ReportSensor:output_type -> sensor.v1.ReportSensorResponse
+	0, // 0: sensor.v1.SensorService.GetCurrentSensor:input_type -> sensor.v1.GetCurrentSensorRequest
+	1, // 1: sensor.v1.SensorService.GetCurrentSensor:output_type -> sensor.v1.GetCurrentSensorResponse
 	1, // [1:2] is the sub-list for method output_type
 	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name

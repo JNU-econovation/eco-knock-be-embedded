@@ -26,11 +26,11 @@ func run() error {
 
 	conf := config.MustLoad(configPath)
 
-	stopSensorReporter, err := startSensorReporter(conf)
+	stopGRPCServer, err := startGRPCServer(conf)
 	if err != nil {
 		return err
 	}
-	defer stopSensorReporter()
+	defer stopGRPCServer()
 
 	return r.Run(fmt.Sprintf(":%d", conf.ServerHTTPPort))
 }

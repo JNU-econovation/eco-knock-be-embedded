@@ -6,23 +6,29 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
 
 type CommonConfig struct {
 	ServerHTTPPort             int
+	ServerGRPCPort             int
 	CentralBackendHost         string
 	CentralBackendHTTPPort     int
 	CentralBackendGRPCPort     int
 	AllowCentralBackendFailure bool
 	SensorI2CDevice            string
 	SensorI2CAddress           uint8
+	AirPurifierAddress         string
+	AirPurifierToken           string
+	AirPurifierTimeout         time.Duration
 }
 
 type yamlConfig struct {
 	Server struct {
 		HTTPPort int `yaml:"http_port"`
+		GRPCPort int `yaml:"grpc_port"`
 	} `yaml:"server"`
 
 	CentralBackend struct {
@@ -36,6 +42,12 @@ type yamlConfig struct {
 		I2CDevice  string `yaml:"i2c_device"`
 		I2CAddress string `yaml:"i2c_address"`
 	} `yaml:"sensor"`
+
+	AirPurifier struct {
+		Address string `yaml:"address"`
+		Token   string `yaml:"token"`
+		Timeout string `yaml:"timeout"`
+	} `yaml:"air_purifier"`
 }
 
 func MustLoad(path string) CommonConfig {
@@ -67,11 +79,14 @@ func Load(path string) (CommonConfig, error) {
 
 	config := CommonConfig{
 		ServerHTTPPort:             raw.Server.HTTPPort,
+		ServerGRPCPort:             raw.Server.GRPCPort,
 		CentralBackendHost:         raw.CentralBackend.Host,
 		CentralBackendHTTPPort:     raw.CentralBackend.HTTPPort,
 		CentralBackendGRPCPort:     raw.CentralBackend.GRPCPort,
 		AllowCentralBackendFailure: raw.CentralBackend.AllowFailure,
 		SensorI2CDevice:            raw.Sensor.I2CDevice,
+		AirPurifierAddress:         raw.AirPurifier.Address,
+		AirPurifierToken:           raw.AirPurifier.Token,
 	}
 
 	if raw.Sensor.I2CAddress != "" {
@@ -80,6 +95,14 @@ func Load(path string) (CommonConfig, error) {
 			return CommonConfig{}, err
 		}
 		config.SensorI2CAddress = address
+	}
+
+	if raw.AirPurifier.Timeout != "" {
+		timeout, err := time.ParseDuration(raw.AirPurifier.Timeout)
+		if err != nil {
+			return CommonConfig{}, fmt.Errorf("invalid air_purifier.timeout: %w", err)
+		}
+		config.AirPurifierTimeout = timeout
 	}
 
 	if err := config.Validate(); err != nil {
@@ -94,28 +117,16 @@ func (config CommonConfig) Validate() error {
 		return fmt.Errorf("server.http_port is required")
 	}
 
+	if config.ServerGRPCPort == 0 {
+		return fmt.Errorf("server.grpc_port is required")
+	}
+
 	if config.SensorI2CDevice == "" {
 		return fmt.Errorf("sensor.i2c_device is required")
 	}
 
 	if config.SensorI2CAddress == 0 {
 		return fmt.Errorf("sensor.i2c_address is required")
-	}
-
-	if config.AllowCentralBackendFailure {
-		return nil
-	}
-
-	if config.CentralBackendHost == "" {
-		return fmt.Errorf("central_backend.host is required")
-	}
-
-	if config.CentralBackendHTTPPort == 0 {
-		return fmt.Errorf("central_backend.http_port is required")
-	}
-
-	if config.CentralBackendGRPCPort == 0 {
-		return fmt.Errorf("central_backend.grpc_port is required")
 	}
 
 	return nil
