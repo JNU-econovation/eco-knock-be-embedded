@@ -11,3 +11,8 @@ central_backend:
 sensor:
   i2c_device: ${SENSOR_I2C_DEVICE}
   i2c_address: ${SENSOR_I2C_ADDRESS}
+
+air_purifier:
+  address: ${AIR_PURIFIER_ADDRESS}
+  token: ${AIR_PURIFIER_TOKEN}
+  timeout: ${AIR_PURIFIER_TIMEOUT}

@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -19,6 +20,9 @@ type CommonConfig struct {
 	AllowCentralBackendFailure bool
 	SensorI2CDevice            string
 	SensorI2CAddress           uint8
+	AirPurifierAddress         string
+	AirPurifierToken           string
+	AirPurifierTimeout         time.Duration
 }
 
 type yamlConfig struct {
@@ -38,6 +42,12 @@ type yamlConfig struct {
 		I2CDevice  string `yaml:"i2c_device"`
 		I2CAddress string `yaml:"i2c_address"`
 	} `yaml:"sensor"`
+
+	AirPurifier struct {
+		Address string `yaml:"address"`
+		Token   string `yaml:"token"`
+		Timeout string `yaml:"timeout"`
+	} `yaml:"air_purifier"`
 }
 
 func MustLoad(path string) CommonConfig {
@@ -75,6 +85,8 @@ func Load(path string) (CommonConfig, error) {
 		CentralBackendGRPCPort:     raw.CentralBackend.GRPCPort,
 		AllowCentralBackendFailure: raw.CentralBackend.AllowFailure,
 		SensorI2CDevice:            raw.Sensor.I2CDevice,
+		AirPurifierAddress:         raw.AirPurifier.Address,
+		AirPurifierToken:           raw.AirPurifier.Token,
 	}
 
 	if raw.Sensor.I2CAddress != "" {
@@ -83,6 +95,14 @@ func Load(path string) (CommonConfig, error) {
 			return CommonConfig{}, err
 		}
 		config.SensorI2CAddress = address
+	}
+
+	if raw.AirPurifier.Timeout != "" {
+		timeout, err := time.ParseDuration(raw.AirPurifier.Timeout)
+		if err != nil {
+			return CommonConfig{}, fmt.Errorf("invalid air_purifier.timeout: %w", err)
+		}
+		config.AirPurifierTimeout = timeout
 	}
 
 	if err := config.Validate(); err != nil {

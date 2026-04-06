@@ -13,6 +13,7 @@ type ErrorCode int
 const (
 	InternalServer ErrorCode = iota + 1
 	SensorReadFailed
+	AirPurifierReadFailed
 )
 
 type Meta struct {
@@ -37,6 +38,13 @@ var metas = map[ErrorCode]Meta{
 		GRPCCode: codes.Unavailable,
 		Number:   1,
 		Message:  "sensor read failed",
+	},
+	AirPurifierReadFailed: {
+		Domain:   constant.DomainAirPurifier,
+		Status:   http.StatusServiceUnavailable,
+		GRPCCode: codes.Unavailable,
+		Number:   1,
+		Message:  "air purifier read failed",
 	},
 }
 
