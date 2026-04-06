@@ -4,48 +4,47 @@ import (
 	"eco-knock-be-embedded/internal/common/constant"
 	"fmt"
 	"net/http"
+
+	"google.golang.org/grpc/codes"
 )
 
 type ErrorCode int
 
 const (
 	InternalServer ErrorCode = iota + 1
-	AuthorizationHeaderRequired
-	Unauthorized
-	CentralBackendUnavailable
+	SensorReadFailed
+	AirPurifierReadFailed
 )
 
 type Meta struct {
-	Domain  constant.Domain
-	Status  int
-	Number  int
-	Message string
+	Domain   constant.Domain
+	Status   int
+	GRPCCode codes.Code
+	Number   int
+	Message  string
 }
 
 var metas = map[ErrorCode]Meta{
 	InternalServer: {
-		Domain:  constant.DomainCommon,
-		Status:  http.StatusInternalServerError,
-		Number:  1,
-		Message: "서버 내부 오류가 발생했습니다.",
+		Domain:   constant.DomainCommon,
+		Status:   http.StatusInternalServerError,
+		GRPCCode: codes.Internal,
+		Number:   1,
+		Message:  "internal server error",
 	},
-	AuthorizationHeaderRequired: {
-		Domain:  constant.DomainCommon,
-		Status:  http.StatusUnauthorized,
-		Number:  2,
-		Message: "Authorization 헤더가 필요합니다.",
+	SensorReadFailed: {
+		Domain:   constant.DomainSensor,
+		Status:   http.StatusServiceUnavailable,
+		GRPCCode: codes.Unavailable,
+		Number:   1,
+		Message:  "sensor read failed",
 	},
-	Unauthorized: {
-		Domain:  constant.DomainCommon,
-		Status:  http.StatusUnauthorized,
-		Number:  3,
-		Message: "유효하지 않은 액세스 토큰입니다.",
-	},
-	CentralBackendUnavailable: {
-		Domain:  constant.DomainCommon,
-		Status:  http.StatusServiceUnavailable,
-		Number:  1,
-		Message: "중앙 백엔드를 현재 사용할 수 없습니다.",
+	AirPurifierReadFailed: {
+		Domain:   constant.DomainAirPurifier,
+		Status:   http.StatusServiceUnavailable,
+		GRPCCode: codes.Unavailable,
+		Number:   1,
+		Message:  "air purifier read failed",
 	},
 }
 
@@ -62,10 +61,19 @@ func (e ErrorCode) Status() int {
 	return e.meta().Status
 }
 
+func (e ErrorCode) GRPCCode() codes.Code {
+	return e.meta().GRPCCode
+}
+
+func (e ErrorCode) Domain() constant.Domain {
+	return e.meta().Domain
+}
+
 func (e ErrorCode) Message(args ...any) string {
 	m := e.meta()
 	if len(args) == 0 {
 		return m.Message
 	}
+
 	return fmt.Sprintf(m.Message, args...)
 }

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Eco Knock Maintainer"
+  short_description: "Preserve this repo's structure during changes."
+  default_prompt: "Use $eco-knock-maintainer to add or refactor code while preserving this repository's structure and conventions."
