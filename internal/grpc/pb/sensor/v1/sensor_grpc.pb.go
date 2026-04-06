@@ -19,14 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SensorService_ReportSensor_FullMethodName = "/sensor.v1.SensorService/ReportSensor"
+	SensorService_GetCurrentSensor_FullMethodName = "/sensor.v1.SensorService/GetCurrentSensor"
 )
 
 // SensorServiceClient is the client API for SensorService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SensorServiceClient interface {
-	ReportSensor(ctx context.Context, in *ReportSensorRequest, opts ...grpc.CallOption) (*ReportSensorResponse, error)
+	GetCurrentSensor(ctx context.Context, in *GetCurrentSensorRequest, opts ...grpc.CallOption) (*GetCurrentSensorResponse, error)
 }
 
 type sensorServiceClient struct {
@@ -37,10 +37,10 @@ func NewSensorServiceClient(cc grpc.ClientConnInterface) SensorServiceClient {
 	return &sensorServiceClient{cc}
 }
 
-func (c *sensorServiceClient) ReportSensor(ctx context.Context, in *ReportSensorRequest, opts ...grpc.CallOption) (*ReportSensorResponse, error) {
+func (c *sensorServiceClient) GetCurrentSensor(ctx context.Context, in *GetCurrentSensorRequest, opts ...grpc.CallOption) (*GetCurrentSensorResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ReportSensorResponse)
-	err := c.cc.Invoke(ctx, SensorService_ReportSensor_FullMethodName, in, out, cOpts...)
+	out := new(GetCurrentSensorResponse)
+	err := c.cc.Invoke(ctx, SensorService_GetCurrentSensor_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (c *sensorServiceClient) ReportSensor(ctx context.Context, in *ReportSensor
 // All implementations must embed UnimplementedSensorServiceServer
 // for forward compatibility.
 type SensorServiceServer interface {
-	ReportSensor(context.Context, *ReportSensorRequest) (*ReportSensorResponse, error)
+	GetCurrentSensor(context.Context, *GetCurrentSensorRequest) (*GetCurrentSensorResponse, error)
 	mustEmbedUnimplementedSensorServiceServer()
 }
 
@@ -62,8 +62,8 @@ type SensorServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedSensorServiceServer struct{}
 
-func (UnimplementedSensorServiceServer) ReportSensor(context.Context, *ReportSensorRequest) (*ReportSensorResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ReportSensor not implemented")
+func (UnimplementedSensorServiceServer) GetCurrentSensor(context.Context, *GetCurrentSensorRequest) (*GetCurrentSensorResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetCurrentSensor not implemented")
 }
 func (UnimplementedSensorServiceServer) mustEmbedUnimplementedSensorServiceServer() {}
 func (UnimplementedSensorServiceServer) testEmbeddedByValue()                       {}
@@ -86,20 +86,20 @@ func RegisterSensorServiceServer(s grpc.ServiceRegistrar, srv SensorServiceServe
 	s.RegisterService(&SensorService_ServiceDesc, srv)
 }
 
-func _SensorService_ReportSensor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReportSensorRequest)
+func _SensorService_GetCurrentSensor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCurrentSensorRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SensorServiceServer).ReportSensor(ctx, in)
+		return srv.(SensorServiceServer).GetCurrentSensor(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SensorService_ReportSensor_FullMethodName,
+		FullMethod: SensorService_GetCurrentSensor_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SensorServiceServer).ReportSensor(ctx, req.(*ReportSensorRequest))
+		return srv.(SensorServiceServer).GetCurrentSensor(ctx, req.(*GetCurrentSensorRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -112,8 +112,8 @@ var SensorService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*SensorServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ReportSensor",
-			Handler:    _SensorService_ReportSensor_Handler,
+			MethodName: "GetCurrentSensor",
+			Handler:    _SensorService_GetCurrentSensor_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -3,7 +3,6 @@ package middleware
 import (
 	"eco-knock-be-embedded/internal/common/apperror"
 	"eco-knock-be-embedded/internal/common/dto/response"
-	"errors"
 	"log"
 	"net/http"
 
@@ -41,11 +40,7 @@ func HandleErrors() gin.HandlerFunc {
 }
 
 func toAppError(err error) *apperror.AppError {
-	if appErr, ok := errors.AsType[*apperror.AppError](err); ok {
-		return appErr
-	}
-
-	return apperror.New(apperror.InternalServer, err)
+	return apperror.From(err)
 }
 
 func makeErrorResponse(appErr *apperror.AppError) response.ErrorResponse {
@@ -65,7 +60,7 @@ func logAppError(appErr *apperror.AppError) {
 
 	switch appErr.Status() {
 	case http.StatusServiceUnavailable:
-		log.Printf("fatal: central backend error: %v", appErr.Err)
+		log.Printf("fatal: service unavailable: %v", appErr.Err)
 	case http.StatusInternalServerError:
 		log.Printf("fatal: internal server error: %v", appErr.Err)
 	}

@@ -1,5 +1,6 @@
 server:
   http_port: ${SERVER_HTTP_PORT}
+  grpc_port: ${SERVER_GRPC_PORT}
 
 central_backend:
   host: ${CENTRAL_BACKEND_HOST}

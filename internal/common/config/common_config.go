@@ -12,6 +12,7 @@ import (
 
 type CommonConfig struct {
 	ServerHTTPPort             int
+	ServerGRPCPort             int
 	CentralBackendHost         string
 	CentralBackendHTTPPort     int
 	CentralBackendGRPCPort     int
@@ -23,6 +24,7 @@ type CommonConfig struct {
 type yamlConfig struct {
 	Server struct {
 		HTTPPort int `yaml:"http_port"`
+		GRPCPort int `yaml:"grpc_port"`
 	} `yaml:"server"`
 
 	CentralBackend struct {
@@ -67,6 +69,7 @@ func Load(path string) (CommonConfig, error) {
 
 	config := CommonConfig{
 		ServerHTTPPort:             raw.Server.HTTPPort,
+		ServerGRPCPort:             raw.Server.GRPCPort,
 		CentralBackendHost:         raw.CentralBackend.Host,
 		CentralBackendHTTPPort:     raw.CentralBackend.HTTPPort,
 		CentralBackendGRPCPort:     raw.CentralBackend.GRPCPort,
@@ -94,28 +97,16 @@ func (config CommonConfig) Validate() error {
 		return fmt.Errorf("server.http_port is required")
 	}
 
+	if config.ServerGRPCPort == 0 {
+		return fmt.Errorf("server.grpc_port is required")
+	}
+
 	if config.SensorI2CDevice == "" {
 		return fmt.Errorf("sensor.i2c_device is required")
 	}
 
 	if config.SensorI2CAddress == 0 {
 		return fmt.Errorf("sensor.i2c_address is required")
-	}
-
-	if config.AllowCentralBackendFailure {
-		return nil
-	}
-
-	if config.CentralBackendHost == "" {
-		return fmt.Errorf("central_backend.host is required")
-	}
-
-	if config.CentralBackendHTTPPort == 0 {
-		return fmt.Errorf("central_backend.http_port is required")
-	}
-
-	if config.CentralBackendGRPCPort == 0 {
-		return fmt.Errorf("central_backend.grpc_port is required")
 	}
 
 	return nil
