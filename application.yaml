@@ -11,6 +11,18 @@ central_backend:
 sensor:
   i2c_device: ${SENSOR_I2C_DEVICE}
   i2c_address: ${SENSOR_I2C_ADDRESS}
+  state_db_path: data/sensor_state.db
+  heater_temp_c: 300
+  heater_duration: 100ms
+  ambient_temp_c: 25
+  poll_interval: 1s
+  state_checkpoint_valid_samples: 60
+  air_quality:
+    history_limit: 3600
+    stabilization_duration: 5m
+    learning_duration: 1h
+    stabilization_valid_sample_goal: 300
+    learning_valid_sample_goal: 3600
 
 air_purifier:
   address: ${AIR_PURIFIER_ADDRESS}
