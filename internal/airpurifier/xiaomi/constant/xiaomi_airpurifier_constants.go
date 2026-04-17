@@ -32,12 +32,12 @@ const (
 )
 
 var (
-	ErrTimeoutRequired         = errors.New("timeout is required")
-	ErrAddressRequired         = errors.New("air purifier address is required")
-	ErrTokenRequired           = errors.New("air purifier token is required")
-	ErrInvalidTokenLength      = errors.New("air purifier token must be 32 hex characters")
-	ErrFavoriteLevelOutOfRange = errors.New("favorite level must be between 0 and 17")
-	ErrUnexpectedCommandResult = errors.New("unexpected miio command result")
+	ErrTimeoutRequired         = errors.New("timeout 값이 필요합니다")
+	ErrAddressRequired         = errors.New("공기청정기 주소가 필요합니다")
+	ErrTokenRequired           = errors.New("공기청정기 토큰이 필요합니다")
+	ErrInvalidTokenLength      = errors.New("공기청정기 토큰은 32자리 hex 문자열이어야 합니다")
+	ErrFavoriteLevelOutOfRange = errors.New("favorite level은 0 이상 17 이하여야 합니다")
+	ErrUnexpectedCommandResult = errors.New("예상하지 못한 miIO 명령 결과입니다")
 	HelloPacket                = miio.MustDecodeHex("21310020ffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
 	StatusProperties           = []string{"power", "aqi", "average_aqi", "humidity", "temp_dec", "mode", "favorite_level", "filter1_life", "f1_hour_used", "motor1_speed", "purify_volume", "led", "led_b", "buzzer", "child_lock"}
 )

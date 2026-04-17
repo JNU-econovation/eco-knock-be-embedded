@@ -10,7 +10,7 @@ import (
 
 func resolveAirPurifierConfig(commonConfig commonconfig.CommonConfig) (airconfig.Config, bool, error) {
 	if commonConfig.AirPurifierAddress == "" || commonConfig.AirPurifierToken == "" || commonConfig.AirPurifierTimeout <= 0 {
-		log.Printf("air purifier grpc server skipped: configuration is incomplete")
+		log.Printf("공기청정기 gRPC 서버를 건너뜁니다: 설정이 완전하지 않습니다")
 		return airconfig.Config{}, false, nil
 	}
 

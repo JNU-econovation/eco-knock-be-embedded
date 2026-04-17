@@ -9,7 +9,7 @@ import (
 	sensorservice "eco-knock-be-embedded/internal/sensor/service"
 )
 
-var ErrSensorServiceRequired = errors.New("sensor service is required")
+var ErrSensorServiceRequired = errors.New("센서 서비스가 필요합니다")
 
 type V1GRPCServer struct {
 	sensorv1pb.UnimplementedSensorServiceServer

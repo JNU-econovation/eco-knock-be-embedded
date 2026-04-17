@@ -20,17 +20,17 @@ type Config struct {
 func (config Config) Validate() error {
 	switch {
 	case config.I2CDevice == "":
-		return invalidConfigError("i2c device not configured")
+		return invalidConfigError("i2c device가 설정되지 않았습니다")
 	case config.I2CAddress != 0x76 && config.I2CAddress != 0x77:
-		return invalidConfigError("i2c address must be 0x76 or 0x77")
+		return invalidConfigError("i2c address는 0x76 또는 0x77이어야 합니다")
 	case config.HeaterTempC == 0:
-		return invalidConfigError("heater temperature must be greater than zero")
+		return invalidConfigError("heater temperature는 0보다 커야 합니다")
 	case config.HeaterTempC > maxHeaterTempC:
-		return invalidConfigError("heater temperature must be <= 400C")
+		return invalidConfigError("heater temperature는 400C 이하여야 합니다")
 	case config.HeaterDuration < minHeaterDuration:
-		return invalidConfigError("heater duration must be at least 1ms")
+		return invalidConfigError("heater duration은 최소 1ms 이상이어야 합니다")
 	case config.HeaterDuration > maxHeaterDuration:
-		return invalidConfigError("heater duration must be <= 65535ms")
+		return invalidConfigError("heater duration은 65535ms 이하여야 합니다")
 	}
 
 	return nil

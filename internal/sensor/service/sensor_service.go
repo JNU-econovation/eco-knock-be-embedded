@@ -12,7 +12,12 @@ import (
 	"time"
 )
 
-var ErrNoSensorSnapshot = errors.New("no sensor snapshot available")
+const (
+	sensorStartMaxAttempts = 3
+	sensorStartDelay       = 3 * time.Second
+)
+
+var ErrNoSensorSnapshot = errors.New("사용 가능한 센서 스냅샷이 없습니다")
 
 type SensorService struct {
 	reader            interfaces.Reader
@@ -39,10 +44,10 @@ func New(
 	config sensorconfig.SensorServiceConfig,
 ) (*SensorService, error) {
 	if reader == nil {
-		return nil, errors.New("sensor reader is required")
+		return nil, errors.New("센서 리더가 필요합니다")
 	}
 	if airQualityService == nil {
-		return nil, errors.New("air quality service is required")
+		return nil, errors.New("공기질 서비스가 필요합니다")
 	}
 	if err := config.Validate(); err != nil {
 		return nil, err
@@ -69,8 +74,20 @@ func (service *SensorService) Start() error {
 		}
 	}
 
-	if err := service.pollOnce(); err != nil {
-		return err
+	for attempts := 1; attempts <= sensorStartMaxAttempts; attempts++ {
+		if err := service.pollOnce(); err == nil {
+			break
+		} else {
+			log.Printf("센서 시작 실패 -> ( %d / %d ): %v", attempts, sensorStartMaxAttempts, err)
+		}
+
+		if attempts < sensorStartMaxAttempts {
+			time.Sleep(sensorStartDelay)
+		}
+
+		if attempts == sensorStartMaxAttempts {
+			log.Printf("초기 센서 스냅샷 없이 서비스를 시작합니다. 다음 폴링 성공을 기다립니다.")
+		}
 	}
 
 	service.started = true
@@ -131,7 +148,7 @@ func (service *SensorService) pollLoop() {
 			return
 		case <-ticker.C:
 			if err := service.pollOnce(); err != nil {
-				log.Printf("sensor poll failed: %v", err)
+				log.Printf("센서 폴링 실패: %v", err)
 			}
 		}
 	}

@@ -21,7 +21,7 @@ type SQLiteStore struct {
 
 func OpenSQLite(path string) (*SQLiteStore, error) {
 	if path == "" {
-		return nil, errors.New("sqlite path is required")
+		return nil, errors.New("SQLite 경로가 필요합니다")
 	}
 
 	dir := filepath.Dir(path)
@@ -232,7 +232,7 @@ CREATE TABLE IF NOT EXISTS sensor_air_quality_state (
 )`
 
 	if _, err := store.db.Exec(schema); err != nil {
-		return fmt.Errorf("create sensor_air_quality_state: %w", err)
+		return fmt.Errorf("sensor_air_quality_state 테이블 생성에 실패했습니다: %w", err)
 	}
 
 	return nil

@@ -16,7 +16,7 @@ func main() {
 	_ = godotenv.Load(".env")
 
 	if err := run(); err != nil {
-		log.Fatal(err)
+		log.Fatalf("서버 실행에 실패했습니다: %v", err)
 	}
 }
 

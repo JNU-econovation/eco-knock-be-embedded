@@ -160,3 +160,52 @@ func TestAirQualityServiceKeepsLastOutputWhenSampleIsInvalid(t *testing.T) {
 		t.Fatalf("expected invalid sample accuracy %d to drop below learned accuracy %d", invalid.Accuracy, learned.Accuracy)
 	}
 }
+
+func TestAirQualityServiceKeepsLearningCompletionTimeStableAfterCompletion(t *testing.T) {
+	service, err := New(testAirQualityConfig())
+	if err != nil {
+		t.Fatalf("new air quality service: %v", err)
+	}
+	startedAt := time.Unix(1_700_030_000, 0)
+
+	var completedAt time.Time
+	for i := 0; i < 3600; i++ {
+		output := service.Estimate(dto.SampleDTO{
+			TemperatureC:     24.5,
+			HumidityRH:       45,
+			GasResistanceOhm: 120_000,
+			GasValid:         true,
+			HeatStable:       true,
+			MeasuredAt:       startedAt.Add(time.Duration(i) * time.Second),
+		})
+		completedAt = output.LearningCompleteAt
+	}
+
+	if completedAt.IsZero() {
+		t.Fatal("expected learning completion time to be set")
+	}
+
+	later := service.Estimate(dto.SampleDTO{
+		TemperatureC:     24.7,
+		HumidityRH:       46,
+		GasResistanceOhm: 119_500,
+		GasValid:         true,
+		HeatStable:       true,
+		MeasuredAt:       startedAt.Add(2 * time.Hour),
+	})
+	if !later.LearningCompleteAt.Equal(completedAt) {
+		t.Fatalf("expected stable learning completion time %v, got %v", completedAt, later.LearningCompleteAt)
+	}
+
+	invalid := service.Estimate(dto.SampleDTO{
+		TemperatureC:     24.6,
+		HumidityRH:       44,
+		GasResistanceOhm: 0,
+		GasValid:         false,
+		HeatStable:       false,
+		MeasuredAt:       startedAt.Add(2*time.Hour + time.Minute),
+	})
+	if !invalid.LearningCompleteAt.Equal(completedAt) {
+		t.Fatalf("expected invalid sample to keep learning completion time %v, got %v", completedAt, invalid.LearningCompleteAt)
+	}
+}

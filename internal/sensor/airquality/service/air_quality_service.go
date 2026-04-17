@@ -16,6 +16,7 @@ const airQualityStateVersion = 1
 type AirQualityService struct {
 	config                airqualityconfig.AirQualityConfig
 	runInStartedAt        time.Time
+	learningCompletedAt   time.Time
 	totalSampleCount      int
 	validSampleCount      int
 	lastValidSampleAt     time.Time
@@ -39,10 +40,14 @@ func New(config airqualityconfig.AirQualityConfig) (*AirQualityService, error) {
 
 func (service *AirQualityService) Restore(state airqualitymodel.AirQualityState) error {
 	if state.Version != 0 && state.Version != airQualityStateVersion {
-		return fmt.Errorf("unsupported air quality state version %d", state.Version)
+		return fmt.Errorf("지원하지 않는 공기질 상태 버전입니다: %d", state.Version)
 	}
 
 	service.runInStartedAt = state.RunInStartedAt
+	if state.ValidSampleCount >= service.config.LearningValidSampleGoal && !state.LastOutput.LearningCompleteAt.IsZero() {
+		elapsedTarget := state.RunInStartedAt.Add(service.config.LearningDuration)
+		service.learningCompletedAt = maxTime(state.LastOutput.LearningCompleteAt, elapsedTarget)
+	}
 	service.totalSampleCount = max(state.TotalSampleCount, 0)
 	service.validSampleCount = max(state.ValidSampleCount, 0)
 	service.lastValidSampleAt = state.LastValidSampleAt
@@ -227,16 +232,32 @@ func (service *AirQualityService) accuracy(now time.Time, validSample bool) uint
 }
 
 func (service *AirQualityService) learningCompleteAt(now time.Time) time.Time {
+	if !service.learningCompletedAt.IsZero() {
+		return service.learningCompletedAt
+	}
+
 	if service.runInStartedAt.IsZero() {
 		return time.Time{}
 	}
 
 	elapsedTarget := service.runInStartedAt.Add(service.config.LearningDuration)
 	if service.validSampleCount >= service.config.LearningValidSampleGoal {
-		if now.After(elapsedTarget) {
-			return now
+		if now.Before(elapsedTarget) {
+			return elapsedTarget
 		}
-		return elapsedTarget
+
+		if !service.lastOutput.LearningCompleteAt.IsZero() && !service.lastOutput.LearningCompleteAt.After(now) {
+			service.learningCompletedAt = maxTime(service.lastOutput.LearningCompleteAt, elapsedTarget)
+			return service.learningCompletedAt
+		}
+
+		completionAt := service.lastValidSampleAt
+		if completionAt.IsZero() || completionAt.Before(elapsedTarget) {
+			completionAt = elapsedTarget
+		}
+
+		service.learningCompletedAt = completionAt
+		return completionAt
 	}
 
 	elapsedSeconds := maxFloat(now.Sub(service.runInStartedAt).Seconds(), 1)
@@ -336,6 +357,13 @@ func minFloat(left float64, right float64) float64 {
 
 func minUint32(left uint32, right uint32) uint32 {
 	if left < right {
+		return left
+	}
+	return right
+}
+
+func maxTime(left time.Time, right time.Time) time.Time {
+	if left.After(right) {
 		return left
 	}
 	return right

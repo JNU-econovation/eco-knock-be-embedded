@@ -42,7 +42,7 @@ func startGRPCServer(commonConfig commonconfig.CommonConfig) (func(), error) {
 
 	go func() {
 		if err := grpcServer.Serve(listener); err != nil {
-			log.Printf("grpc server stopped: %v", err)
+			log.Printf("gRPC 서버가 종료되었습니다: %v", err)
 		}
 	}()
 

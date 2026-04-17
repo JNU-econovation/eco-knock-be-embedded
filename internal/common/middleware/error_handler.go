@@ -60,8 +60,8 @@ func logAppError(appErr *apperror.AppError) {
 
 	switch appErr.Status() {
 	case http.StatusServiceUnavailable:
-		log.Printf("fatal: service unavailable: %v", appErr.Err)
+		log.Printf("치명적 오류: 서비스를 사용할 수 없습니다: %v", appErr.Err)
 	case http.StatusInternalServerError:
-		log.Printf("fatal: internal server error: %v", appErr.Err)
+		log.Printf("치명적 오류: 내부 서버 오류가 발생했습니다: %v", appErr.Err)
 	}
 }

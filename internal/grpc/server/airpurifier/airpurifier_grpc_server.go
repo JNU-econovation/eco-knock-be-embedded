@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-var ErrAirPurifierServiceRequired = errors.New("air purifier service is required")
+var ErrAirPurifierServiceRequired = errors.New("공기청정기 서비스가 필요합니다")
 
 type GRPCServer struct {
 	airpurifierpb.UnimplementedAirPurifierServiceServer

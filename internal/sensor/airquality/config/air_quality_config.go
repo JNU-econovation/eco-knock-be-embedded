@@ -13,15 +13,15 @@ type AirQualityConfig struct {
 func (config AirQualityConfig) Validate() error {
 	switch {
 	case config.HistoryLimit <= 0:
-		return invalidConfigError("history_limit must be greater than zero")
+		return invalidConfigError("history_limit은 0보다 커야 합니다")
 	case config.StabilizationDuration <= 0:
-		return invalidConfigError("stabilization_duration must be greater than zero")
+		return invalidConfigError("stabilization_duration은 0보다 커야 합니다")
 	case config.LearningDuration <= 0:
-		return invalidConfigError("learning_duration must be greater than zero")
+		return invalidConfigError("learning_duration은 0보다 커야 합니다")
 	case config.StabilizationValidSampleGoal <= 0:
-		return invalidConfigError("stabilization_valid_sample_goal must be greater than zero")
+		return invalidConfigError("stabilization_valid_sample_goal은 0보다 커야 합니다")
 	case config.LearningValidSampleGoal <= 0:
-		return invalidConfigError("learning_valid_sample_goal must be greater than zero")
+		return invalidConfigError("learning_valid_sample_goal은 0보다 커야 합니다")
 	}
 
 	return nil

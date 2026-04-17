@@ -32,7 +32,7 @@ func resolveAirPurifierConfig(commonConfig commonconfig.CommonConfig) (airconfig
 		timeout = stubAirPurifierTimeout
 	}
 
-	log.Printf("air purifier grpc server uses stub client on non-linux platform")
+	log.Printf("non-linux 환경이므로 공기청정기 gRPC 서버가 stub 클라이언트로 동작합니다")
 
 	conf, err := airconfig.New(address, token, timeout)
 	if err != nil {

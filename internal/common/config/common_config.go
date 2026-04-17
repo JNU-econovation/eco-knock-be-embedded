@@ -77,7 +77,7 @@ type yamlConfig struct {
 func MustLoad(path string) CommonConfig {
 	config, err := Load(path)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("애플리케이션 설정을 불러오지 못했습니다: %v", err)
 	}
 
 	return config
@@ -85,7 +85,7 @@ func MustLoad(path string) CommonConfig {
 
 func Load(path string) (CommonConfig, error) {
 	if path == "" {
-		return CommonConfig{}, fmt.Errorf("config path is required")
+		return CommonConfig{}, fmt.Errorf("설정 파일 경로가 필요합니다")
 	}
 
 	content, err := os.ReadFile(path)
@@ -131,7 +131,7 @@ func Load(path string) (CommonConfig, error) {
 	if raw.Sensor.HeaterDuration != "" {
 		duration, err := time.ParseDuration(raw.Sensor.HeaterDuration)
 		if err != nil {
-			return CommonConfig{}, fmt.Errorf("invalid sensor.heater_duration: %w", err)
+			return CommonConfig{}, fmt.Errorf("sensor.heater_duration 값이 올바르지 않습니다: %w", err)
 		}
 		config.SensorHeaterDuration = duration
 	}
@@ -139,7 +139,7 @@ func Load(path string) (CommonConfig, error) {
 	if raw.Sensor.PollInterval != "" {
 		duration, err := time.ParseDuration(raw.Sensor.PollInterval)
 		if err != nil {
-			return CommonConfig{}, fmt.Errorf("invalid sensor.poll_interval: %w", err)
+			return CommonConfig{}, fmt.Errorf("sensor.poll_interval 값이 올바르지 않습니다: %w", err)
 		}
 		config.SensorPollInterval = duration
 	}
@@ -147,7 +147,7 @@ func Load(path string) (CommonConfig, error) {
 	if raw.Sensor.AirQuality.StabilizationDuration != "" {
 		duration, err := time.ParseDuration(raw.Sensor.AirQuality.StabilizationDuration)
 		if err != nil {
-			return CommonConfig{}, fmt.Errorf("invalid sensor.air_quality.stabilization_duration: %w", err)
+			return CommonConfig{}, fmt.Errorf("sensor.air_quality.stabilization_duration 값이 올바르지 않습니다: %w", err)
 		}
 		config.SensorAirQualityStabilizationDuration = duration
 	}
@@ -155,7 +155,7 @@ func Load(path string) (CommonConfig, error) {
 	if raw.Sensor.AirQuality.LearningDuration != "" {
 		duration, err := time.ParseDuration(raw.Sensor.AirQuality.LearningDuration)
 		if err != nil {
-			return CommonConfig{}, fmt.Errorf("invalid sensor.air_quality.learning_duration: %w", err)
+			return CommonConfig{}, fmt.Errorf("sensor.air_quality.learning_duration 값이 올바르지 않습니다: %w", err)
 		}
 		config.SensorAirQualityLearningDuration = duration
 	}
@@ -163,7 +163,7 @@ func Load(path string) (CommonConfig, error) {
 	if raw.AirPurifier.Timeout != "" {
 		timeout, err := time.ParseDuration(raw.AirPurifier.Timeout)
 		if err != nil {
-			return CommonConfig{}, fmt.Errorf("invalid air_purifier.timeout: %w", err)
+			return CommonConfig{}, fmt.Errorf("air_purifier.timeout 값이 올바르지 않습니다: %w", err)
 		}
 		config.AirPurifierTimeout = timeout
 	}
@@ -177,49 +177,49 @@ func Load(path string) (CommonConfig, error) {
 
 func (config CommonConfig) Validate() error {
 	if config.ServerHTTPPort == 0 {
-		return fmt.Errorf("server.http_port is required")
+		return fmt.Errorf("server.http_port 값이 필요합니다")
 	}
 
 	if config.ServerGRPCPort == 0 {
-		return fmt.Errorf("server.grpc_port is required")
+		return fmt.Errorf("server.grpc_port 값이 필요합니다")
 	}
 
 	if config.SensorI2CDevice == "" {
-		return fmt.Errorf("sensor.i2c_device is required")
+		return fmt.Errorf("sensor.i2c_device 값이 필요합니다")
 	}
 
 	if config.SensorI2CAddress == 0 {
-		return fmt.Errorf("sensor.i2c_address is required")
+		return fmt.Errorf("sensor.i2c_address 값이 필요합니다")
 	}
 	if config.SensorStateDBPath == "" {
-		return fmt.Errorf("sensor.state_db_path is required")
+		return fmt.Errorf("sensor.state_db_path 값이 필요합니다")
 	}
 	if config.SensorHeaterTempC == 0 {
-		return fmt.Errorf("sensor.heater_temp_c is required")
+		return fmt.Errorf("sensor.heater_temp_c 값이 필요합니다")
 	}
 	if config.SensorHeaterDuration <= 0 {
-		return fmt.Errorf("sensor.heater_duration is required")
+		return fmt.Errorf("sensor.heater_duration 값이 필요합니다")
 	}
 	if config.SensorPollInterval <= 0 {
-		return fmt.Errorf("sensor.poll_interval is required")
+		return fmt.Errorf("sensor.poll_interval 값이 필요합니다")
 	}
 	if config.SensorStateCheckpointValidSamples <= 0 {
-		return fmt.Errorf("sensor.state_checkpoint_valid_samples is required")
+		return fmt.Errorf("sensor.state_checkpoint_valid_samples 값이 필요합니다")
 	}
 	if config.SensorAirQualityHistoryLimit <= 0 {
-		return fmt.Errorf("sensor.air_quality.history_limit is required")
+		return fmt.Errorf("sensor.air_quality.history_limit 값이 필요합니다")
 	}
 	if config.SensorAirQualityStabilizationDuration <= 0 {
-		return fmt.Errorf("sensor.air_quality.stabilization_duration is required")
+		return fmt.Errorf("sensor.air_quality.stabilization_duration 값이 필요합니다")
 	}
 	if config.SensorAirQualityLearningDuration <= 0 {
-		return fmt.Errorf("sensor.air_quality.learning_duration is required")
+		return fmt.Errorf("sensor.air_quality.learning_duration 값이 필요합니다")
 	}
 	if config.SensorAirQualityStabilizationValidSampleGoal <= 0 {
-		return fmt.Errorf("sensor.air_quality.stabilization_valid_sample_goal is required")
+		return fmt.Errorf("sensor.air_quality.stabilization_valid_sample_goal 값이 필요합니다")
 	}
 	if config.SensorAirQualityLearningValidSampleGoal <= 0 {
-		return fmt.Errorf("sensor.air_quality.learning_valid_sample_goal is required")
+		return fmt.Errorf("sensor.air_quality.learning_valid_sample_goal 값이 필요합니다")
 	}
 
 	return nil
@@ -228,7 +228,7 @@ func (config CommonConfig) Validate() error {
 func parseI2CAddress(value string) (uint8, error) {
 	parsed, err := strconv.ParseUint(value, 0, 8)
 	if err != nil {
-		return 0, fmt.Errorf("invalid sensor.i2c_address: %w", err)
+		return 0, fmt.Errorf("sensor.i2c_address 값이 올바르지 않습니다: %w", err)
 	}
 
 	return uint8(parsed), nil
