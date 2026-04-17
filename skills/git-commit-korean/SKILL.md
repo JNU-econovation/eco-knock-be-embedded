@@ -21,6 +21,8 @@ Use `git diff --staged` as the source of truth when files are already staged. If
 ## Split Commits Aggressively
 
 Default to the smallest coherent commit units you can make.
+Assume the correct answer is to split more unless there is a concrete reason not to.
+When in doubt, prefer two small commits over one broader commit.
 
 Apply these rules before staging:
 
@@ -30,6 +32,8 @@ Apply these rules before staging:
 - Split config, proto, wiring, domain logic, tests, docs, and cleanup into separate commits when they can stand on their own.
 - If one file contains multiple unrelated edits, stage partial hunks to keep each commit narrow.
 - If you are unsure whether to split, split.
+- Keep pushing the boundary smaller until further splitting would make the history misleading or non-buildable.
+- Do not choose a broad commit just because it is faster or simpler to stage.
 
 Avoid broad “do everything” commits. If the current diff mixes multiple concerns, propose or create multiple Korean commits instead of one broad commit.
 
