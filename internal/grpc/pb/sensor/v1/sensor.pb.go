@@ -4,7 +4,7 @@
 // 	protoc        v7.34.1
 // source: proto/sensor/v1/sensor.proto
 
-package sensorpb
+package sensorv1pb
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -166,7 +166,7 @@ const file_proto_sensor_v1_sensor_proto_rawDesc = "" +
 	"heatStable\x12-\n" +
 	"\x13measured_at_unix_ms\x18\a \x01(\x03R\x10measuredAtUnixMs2l\n" +
 	"\rSensorService\x12[\n" +
-	"\x10GetCurrentSensor\x12\".sensor.v1.GetCurrentSensorRequest\x1a#.sensor.v1.GetCurrentSensorResponseB;Z9eco-knock-be-embedded/internal/grpc/pb/sensor/v1;sensorpbb\x06proto3"
+	"\x10GetCurrentSensor\x12\".sensor.v1.GetCurrentSensorRequest\x1a#.sensor.v1.GetCurrentSensorResponseB=Z;eco-knock-be-embedded/internal/grpc/pb/sensor/v1;sensorv1pbb\x06proto3"
 
 var (
 	file_proto_sensor_v1_sensor_proto_rawDescOnce sync.Once

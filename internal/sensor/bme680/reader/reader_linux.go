@@ -100,7 +100,7 @@ const (
 	maxHeaterTemp = 400
 )
 
-var ErrSensorClosed = errors.New("bme680 sensor is closed")
+var ErrSensorClosed = errors.New("BME680 센서가 이미 종료되었습니다")
 
 type Sensor struct {
 	mu      sync.Mutex
@@ -159,7 +159,7 @@ func Open(cfg bme680config.Config) (*Sensor, error) {
 
 	bus, err := sysfs.NewI2C(busNumber)
 	if err != nil {
-		return nil, fmt.Errorf("open i2c bus %d: %w", busNumber, err)
+		return nil, fmt.Errorf("I2C 버스 %d 열기에 실패했습니다: %w", busNumber, err)
 	}
 
 	sensor := &Sensor{
@@ -218,15 +218,15 @@ func (sensor *Sensor) init() error {
 
 	id, err := sensor.readReg(regChipID)
 	if err != nil {
-		return fmt.Errorf("read chip id: %w", err)
+		return fmt.Errorf("칩 ID 읽기에 실패했습니다: %w", err)
 	}
 	if id != chipID {
-		return fmt.Errorf("unexpected chip id 0x%02x", id)
+		return fmt.Errorf("예상하지 못한 칩 ID입니다: 0x%02x", id)
 	}
 
 	variant, err := sensor.readReg(regVariantID)
 	if err != nil {
-		return fmt.Errorf("read variant id: %w", err)
+		return fmt.Errorf("variant ID 읽기에 실패했습니다: %w", err)
 	}
 	sensor.variant = variant
 
@@ -247,7 +247,7 @@ func (sensor *Sensor) init() error {
 
 func (sensor *Sensor) softReset() error {
 	if err := sensor.writeReg(regSoftReset, softResetCommand); err != nil {
-		return fmt.Errorf("soft reset: %w", err)
+		return fmt.Errorf("소프트 리셋에 실패했습니다: %w", err)
 	}
 
 	time.Sleep(resetDelayUs * time.Microsecond)
@@ -258,13 +258,13 @@ func (sensor *Sensor) loadCalibrationData() error {
 	coeff := make([]byte, 42)
 
 	if err := sensor.readRegs(regCoeff1, coeff[:23]); err != nil {
-		return fmt.Errorf("read coeff block 1: %w", err)
+		return fmt.Errorf("보정 계수 블록 1 읽기에 실패했습니다: %w", err)
 	}
 	if err := sensor.readRegs(regCoeff2, coeff[23:37]); err != nil {
-		return fmt.Errorf("read coeff block 2: %w", err)
+		return fmt.Errorf("보정 계수 블록 2 읽기에 실패했습니다: %w", err)
 	}
 	if err := sensor.readRegs(regCoeff3, coeff[37:42]); err != nil {
-		return fmt.Errorf("read coeff block 3: %w", err)
+		return fmt.Errorf("보정 계수 블록 3 읽기에 실패했습니다: %w", err)
 	}
 
 	sensor.calib.parT1 = concatBytes(coeff[32], coeff[31])
@@ -307,29 +307,29 @@ func (sensor *Sensor) applySensorConfig() error {
 	}
 
 	if err := sensor.writeReg(regCtrlHum, setBitsPos0(0, oshMask, os16x)); err != nil {
-		return fmt.Errorf("write ctrl_hum: %w", err)
+		return fmt.Errorf("ctrl_hum 쓰기에 실패했습니다: %w", err)
 	}
 
 	ctrlMeas, err := sensor.readReg(regCtrlMeas)
 	if err != nil {
-		return fmt.Errorf("read ctrl_meas: %w", err)
+		return fmt.Errorf("ctrl_meas 읽기에 실패했습니다: %w", err)
 	}
 	ctrlMeas = setBits(ctrlMeas, ostMask, ostPos, os2x)
 	ctrlMeas = setBits(ctrlMeas, ospMask, ospPos, os1x)
 	ctrlMeas &= ^byte(modeMask)
 	if err := sensor.writeReg(regCtrlMeas, ctrlMeas); err != nil {
-		return fmt.Errorf("write ctrl_meas: %w", err)
+		return fmt.Errorf("ctrl_meas 쓰기에 실패했습니다: %w", err)
 	}
 
 	config, err := sensor.readReg(regConfig)
 	if err != nil {
-		return fmt.Errorf("read config: %w", err)
+		return fmt.Errorf("config 읽기에 실패했습니다: %w", err)
 	}
 	config = setBits(config, filterMask, filterPos, filterOff)
 	config = setBits(config, odr20Mask, odr20Pos, 0)
 	config = setBits(config, odr3Mask, odr3Pos, 1)
 	if err := sensor.writeReg(regConfig, config); err != nil {
-		return fmt.Errorf("write config: %w", err)
+		return fmt.Errorf("config 쓰기에 실패했습니다: %w", err)
 	}
 
 	return nil
@@ -342,31 +342,31 @@ func (sensor *Sensor) applyHeaterConfig() error {
 
 	resHeat := sensor.calcResHeat(sensor.config.HeaterTempC)
 	if err := sensor.writeReg(regResHeat0, resHeat); err != nil {
-		return fmt.Errorf("write res_heat0: %w", err)
+		return fmt.Errorf("res_heat0 쓰기에 실패했습니다: %w", err)
 	}
 
 	gasWait := calcGasWait(uint16(sensor.config.HeaterDuration / time.Millisecond))
 	if err := sensor.writeReg(regGasWait0, gasWait); err != nil {
-		return fmt.Errorf("write gas_wait0: %w", err)
+		return fmt.Errorf("gas_wait0 쓰기에 실패했습니다: %w", err)
 	}
 
 	ctrlGas0, err := sensor.readReg(regCtrlGas0)
 	if err != nil {
-		return fmt.Errorf("read ctrl_gas_0: %w", err)
+		return fmt.Errorf("ctrl_gas_0 읽기에 실패했습니다: %w", err)
 	}
 	ctrlGas0 = setBits(ctrlGas0, hctrlMask, hctrlPos, 0)
 	if err := sensor.writeReg(regCtrlGas0, ctrlGas0); err != nil {
-		return fmt.Errorf("write ctrl_gas_0: %w", err)
+		return fmt.Errorf("ctrl_gas_0 쓰기에 실패했습니다: %w", err)
 	}
 
 	ctrlGas1, err := sensor.readReg(regCtrlGas1)
 	if err != nil {
-		return fmt.Errorf("read ctrl_gas_1: %w", err)
+		return fmt.Errorf("ctrl_gas_1 읽기에 실패했습니다: %w", err)
 	}
 	ctrlGas1 = setBitsPos0(ctrlGas1, nbConvMask, 0)
 	ctrlGas1 = setBits(ctrlGas1, runGasMask, runGasPos, sensor.runGasValue())
 	if err := sensor.writeReg(regCtrlGas1, ctrlGas1); err != nil {
-		return fmt.Errorf("write ctrl_gas_1: %w", err)
+		return fmt.Errorf("ctrl_gas_1 쓰기에 실패했습니다: %w", err)
 	}
 
 	return nil
@@ -376,7 +376,7 @@ func (sensor *Sensor) setOpMode(mode byte) error {
 	for {
 		ctrlMeas, err := sensor.readReg(regCtrlMeas)
 		if err != nil {
-			return fmt.Errorf("read ctrl_meas: %w", err)
+			return fmt.Errorf("ctrl_meas 읽기에 실패했습니다: %w", err)
 		}
 
 		current := ctrlMeas & modeMask
@@ -387,14 +387,14 @@ func (sensor *Sensor) setOpMode(mode byte) error {
 
 			ctrlMeas = (ctrlMeas & ^byte(modeMask)) | (mode & modeMask)
 			if err := sensor.writeReg(regCtrlMeas, ctrlMeas); err != nil {
-				return fmt.Errorf("write ctrl_meas: %w", err)
+				return fmt.Errorf("ctrl_meas 쓰기에 실패했습니다: %w", err)
 			}
 			return nil
 		}
 
 		ctrlMeas &= ^byte(modeMask)
 		if err := sensor.writeReg(regCtrlMeas, ctrlMeas); err != nil {
-			return fmt.Errorf("write ctrl_meas sleep: %w", err)
+			return fmt.Errorf("ctrl_meas sleep 전환 쓰기에 실패했습니다: %w", err)
 		}
 
 		time.Sleep(pollDelayUs * time.Microsecond)
@@ -413,7 +413,7 @@ func (sensor *Sensor) readFieldData() (dto.SampleDTO, error) {
 
 	for i := 0; i < fieldRetries; i++ {
 		if err := sensor.readRegs(regField0, field[:]); err != nil {
-			return dto.SampleDTO{}, fmt.Errorf("read field data: %w", err)
+			return dto.SampleDTO{}, fmt.Errorf("필드 데이터 읽기에 실패했습니다: %w", err)
 		}
 
 		status := field[0] & newDataMask
@@ -460,7 +460,7 @@ func (sensor *Sensor) readFieldData() (dto.SampleDTO, error) {
 		}, nil
 	}
 
-	return dto.SampleDTO{}, errors.New("bme680 returned no new data")
+	return dto.SampleDTO{}, errors.New("BME680이 새 데이터를 반환하지 않았습니다")
 }
 
 func (sensor *Sensor) calcTemperature(adc uint32) float64 {
@@ -556,7 +556,7 @@ func (sensor *Sensor) writeReg(reg, value byte) error {
 func parseBusNumber(ref string) (int, error) {
 	base := strings.TrimSpace(ref)
 	if base == "" {
-		return 0, errors.New("I2C device not configured")
+		return 0, errors.New("I2C device가 설정되지 않았습니다")
 	}
 
 	base = strings.ToLower(filepath.Base(base))
@@ -569,7 +569,7 @@ func parseBusNumber(ref string) (int, error) {
 
 	number, err := strconv.Atoi(base)
 	if err != nil {
-		return 0, fmt.Errorf("invalid I2C bus reference %q", ref)
+		return 0, fmt.Errorf("I2C 버스 참조 값이 올바르지 않습니다: %q", ref)
 	}
 
 	return number, nil

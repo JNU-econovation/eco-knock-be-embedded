@@ -1,20 +1,20 @@
 package main
 
 import (
-	airconfig "eco-knock-be-embedded/internal/airpurifier/xiaomi/config"
 	airservice "eco-knock-be-embedded/internal/airpurifier/xiaomi/service"
 	commonconfig "eco-knock-be-embedded/internal/common/config"
 	airpurifierpb "eco-knock-be-embedded/internal/grpc/pb/airpurifier/v1"
-	sensorpb "eco-knock-be-embedded/internal/grpc/pb/sensor/v1"
+	sensorv1pb "eco-knock-be-embedded/internal/grpc/pb/sensor/v1"
+	sensorv2pb "eco-knock-be-embedded/internal/grpc/pb/sensor/v2"
 	airpurifiergrpc "eco-knock-be-embedded/internal/grpc/server/airpurifier"
 	sensorgrpc "eco-knock-be-embedded/internal/grpc/server/sensor"
-	bme680config "eco-knock-be-embedded/internal/sensor/bme680/config"
+	airqualityservice "eco-knock-be-embedded/internal/sensor/airquality/service"
+	airqualitystore "eco-knock-be-embedded/internal/sensor/airquality/store"
 	bme680reader "eco-knock-be-embedded/internal/sensor/bme680/reader"
 	sensorservice "eco-knock-be-embedded/internal/sensor/service"
 	"log"
 	"net"
 	"strconv"
-	"time"
 
 	"google.golang.org/grpc"
 )
@@ -42,7 +42,7 @@ func startGRPCServer(commonConfig commonconfig.CommonConfig) (func(), error) {
 
 	go func() {
 		if err := grpcServer.Serve(listener); err != nil {
-			log.Printf("grpc server stopped: %v", err)
+			log.Printf("gRPC 서버가 종료되었습니다: %v", err)
 		}
 	}()
 
@@ -55,41 +55,72 @@ func startGRPCServer(commonConfig commonconfig.CommonConfig) (func(), error) {
 }
 
 func startSensorGRPCServer(grpcServer *grpc.Server, commonConfig commonconfig.CommonConfig) (func(), error) {
-	bme680Conf := bme680config.Config{
-		I2CDevice:      commonConfig.SensorI2CDevice,
-		I2CAddress:     commonConfig.SensorI2CAddress,
-		HeaterTempC:    300,
-		HeaterDuration: 100 * time.Millisecond,
-		AmbientTempC:   25,
-	}
-	sensorReader, err := bme680reader.Open(bme680Conf)
+	runtimeConfig, err := resolveSensorRuntimeConfig(commonConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	sensorQueryService := sensorservice.New(sensorReader)
-	sensorGRPCServer, err := sensorgrpc.NewGRPCServer(sensorQueryService)
+	sensorReader, err := bme680reader.Open(runtimeConfig.readerConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	stateStore, err := airqualitystore.OpenSQLite(runtimeConfig.stateDBPath)
 	if err != nil {
 		_ = sensorReader.Close()
 		return nil, err
 	}
 
-	sensorpb.RegisterSensorServiceServer(grpcServer, sensorGRPCServer)
+	airQualityService, err := airqualityservice.New(runtimeConfig.airQualityConfig)
+	if err != nil {
+		_ = stateStore.Close()
+		_ = sensorReader.Close()
+		return nil, err
+	}
+
+	sensorQueryService, err := sensorservice.New(
+		sensorReader,
+		airQualityService,
+		stateStore,
+		runtimeConfig.serviceConfig,
+	)
+	if err != nil {
+		_ = stateStore.Close()
+		_ = sensorReader.Close()
+		return nil, err
+	}
+	if err := sensorQueryService.Start(); err != nil {
+		_ = sensorQueryService.Close()
+		return nil, err
+	}
+
+	sensorV1GRPCServer, err := sensorgrpc.NewV1GRPCServer(sensorQueryService)
+	if err != nil {
+		_ = sensorQueryService.Close()
+		return nil, err
+	}
+
+	sensorV2GRPCServer, err := sensorgrpc.NewV2GRPCServer(sensorQueryService)
+	if err != nil {
+		_ = sensorQueryService.Close()
+		return nil, err
+	}
+
+	sensorv1pb.RegisterSensorServiceServer(grpcServer, sensorV1GRPCServer)
+	sensorv2pb.RegisterSensorServiceServer(grpcServer, sensorV2GRPCServer)
 
 	return func() {
-		_ = sensorReader.Close()
+		_ = sensorQueryService.Close()
 	}, nil
 }
 
 func startAirPurifierGRPCServer(grpcServer *grpc.Server, commonConfig commonconfig.CommonConfig) (func(), error) {
-	if commonConfig.AirPurifierAddress == "" || commonConfig.AirPurifierToken == "" || commonConfig.AirPurifierTimeout <= 0 {
-		log.Printf("air purifier grpc server skipped: configuration is incomplete")
-		return func() {}, nil
-	}
-
-	conf, err := airconfig.New(commonConfig.AirPurifierAddress, commonConfig.AirPurifierToken, commonConfig.AirPurifierTimeout)
+	conf, ok, err := resolveAirPurifierConfig(commonConfig)
 	if err != nil {
 		return nil, err
+	}
+	if !ok {
+		return func() {}, nil
 	}
 
 	airPurifierService, err := airservice.New(conf)

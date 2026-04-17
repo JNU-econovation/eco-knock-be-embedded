@@ -10,7 +10,7 @@ import (
 	requestdto "eco-knock-be-embedded/internal/airpurifier/xiaomi/dto/miio/request"
 )
 
-var ErrInvalidResponse = errors.New("invalid miio response")
+var ErrInvalidResponse = errors.New("miIO 응답이 올바르지 않습니다")
 
 type Packet struct {
 	Length   uint16

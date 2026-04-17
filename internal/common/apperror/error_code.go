@@ -30,21 +30,21 @@ var metas = map[ErrorCode]Meta{
 		Status:   http.StatusInternalServerError,
 		GRPCCode: codes.Internal,
 		Number:   1,
-		Message:  "internal server error",
+		Message:  "내부 서버 오류가 발생했습니다",
 	},
 	SensorReadFailed: {
 		Domain:   constant.DomainSensor,
 		Status:   http.StatusServiceUnavailable,
 		GRPCCode: codes.Unavailable,
 		Number:   1,
-		Message:  "sensor read failed",
+		Message:  "센서 읽기에 실패했습니다",
 	},
 	AirPurifierReadFailed: {
 		Domain:   constant.DomainAirPurifier,
 		Status:   http.StatusServiceUnavailable,
 		GRPCCode: codes.Unavailable,
 		Number:   1,
-		Message:  "air purifier read failed",
+		Message:  "공기청정기 상태 조회에 실패했습니다",
 	},
 }
 

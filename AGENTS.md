@@ -13,10 +13,13 @@ Below is the list of repository-local skills that can be used in this project.
 ## How to use skills
 - Discovery: The list above is the repository-local skill registry for this project.
 - Trigger rules: If the user names a skill directly, or the task clearly matches a listed skill, read that `SKILL.md` and follow it for the current turn.
+- Trigger rules: If a listed skill seems even plausibly applicable, bias toward using it instead of hesitating or improvising an ad-hoc workflow.
+- Communication: If you are using a skill for the current turn, explicitly say which skill you are using.
 - Scope: Do not carry a skill across turns unless the user mentions it again or the next task still clearly matches it.
 - Missing or blocked: If a listed skill file cannot be opened, say so briefly and continue with the best fallback.
 
 ## Local guidance
 - Prefer repository-local skills in `./skills` before inventing ad-hoc workflow rules.
+- If a task overlaps with a listed skill, do not skip it just because a non-skill approach also seems possible.
 - When adding a new local skill under `./skills`, also add it to the `Available skills` list in this file so it can be auto-discovered in future sessions.
 - Keep this file short. Put detailed task instructions in the skill's `SKILL.md`, not here.

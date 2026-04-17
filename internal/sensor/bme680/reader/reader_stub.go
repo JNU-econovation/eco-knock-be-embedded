@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	ErrUnsupportedPlatform = errors.New("bme680 sensor access requires linux")
-	ErrSensorClosed        = errors.New("bme680 sensor is closed")
+	ErrUnsupportedPlatform = errors.New("BME680 센서 접근은 Linux 환경이 필요합니다")
+	ErrSensorClosed        = errors.New("BME680 센서가 이미 종료되었습니다")
 )
 
 type Sensor struct {
