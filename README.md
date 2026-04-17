@@ -7,10 +7,20 @@
 ## 현재 구현 범위
 
 - `BME680` 현재값 1회 조회
-  - 온도
-  - 습도
-  - 가스 저항
-  - 센서 상태 비트
+  - `sensor.v1`
+    - 온도
+    - 습도
+    - 가스 저항
+    - 센서 상태 비트
+  - `sensor.v2`
+    - `sensor.v1`의 raw 값
+    - `static_iaq`
+    - `estimated_eco2_ppm`
+    - `estimated_bvoc_ppm`
+    - `accuracy`
+    - `stabilization_progress_pct`
+    - `gas_percentage`
+    - `learning_complete_at_unix_ms`
 - 샤오미 공기청정기 2 계열 현재 상태 조회
   - 전원
   - AQI
@@ -64,6 +74,18 @@ central_backend:
 sensor:
   i2c_device: ${SENSOR_I2C_DEVICE}
   i2c_address: ${SENSOR_I2C_ADDRESS}
+  state_db_path: data/sensor_state.db
+  heater_temp_c: 300
+  heater_duration: 100ms
+  ambient_temp_c: 25
+  poll_interval: 1s
+  state_checkpoint_valid_samples: 60
+  air_quality:
+    history_limit: 3600
+    stabilization_duration: 5m
+    learning_duration: 1h
+    stabilization_valid_sample_goal: 300
+    learning_valid_sample_goal: 3600
 
 air_purifier:
   address: ${AIR_PURIFIER_ADDRESS}
@@ -100,6 +122,16 @@ AIR_PURIFIER_TIMEOUT=3s
   - Raspberry Pi의 I2C 디바이스 경로
 - `SENSOR_I2C_ADDRESS`
   - BME680 주소
+- `sensor.state_db_path`
+  - air quality 학습 상태를 저장하는 SQLite 경로
+- `sensor.heater_temp_c`, `sensor.heater_duration`, `sensor.ambient_temp_c`
+  - BME680 강제 측정 히터 설정
+- `sensor.poll_interval`
+  - 센서 백그라운드 폴링 주기
+- `sensor.state_checkpoint_valid_samples`
+  - 유효 샘플 몇 개마다 SQLite 상태를 저장할지 결정
+- `sensor.air_quality.*`
+  - `sensor.v2` 파생값 계산에 사용하는 history, stabilization, learning 설정
 - `AIR_PURIFIER_ADDRESS`
   - 샤오미 공기청정기 로컬 miIO 주소
 - `AIR_PURIFIER_TOKEN`
@@ -128,12 +160,21 @@ go test ./...
 현재 구현된 RPC:
 
 - `sensor.v1.SensorService/GetCurrentSensor`
+- `sensor.v2.SensorService/GetCurrentSensor`
 - `airpurifier.v1.AirPurifierService/GetCurrentAirPurifier`
 
 proto 파일:
 
-- [sensor.proto](./proto/sensor/v1/sensor.proto)
+- [sensor.v1](./proto/sensor/v1/sensor.proto)
+- [sensor.v2](./proto/sensor/v2/sensor.proto)
 - [airpurifier.proto](./proto/airpurifier/v1/airpurifier.proto)
+
+센서 버전 구분:
+
+- `sensor.v1`
+  - raw 센서값만 제공합니다.
+- `sensor.v2`
+  - raw 센서값에 air quality 파생값을 함께 제공합니다.
 
 현재 공기청정기는 조회만 구현돼 있고, 전원 제어나 모드 변경 RPC는 아직 없습니다.
 
@@ -183,6 +224,8 @@ BME680은 현재 다음 기준으로 동작합니다.
 
 - I2C 디바이스: `/dev/i2c-1`
 - 주소: `0x76`
+- 백그라운드 폴링: 기본 `1s`
+- 상태 저장: SQLite checkpoint, 기본 `60`개 유효 샘플마다 저장
 
 Pi에서 점검할 때 자주 쓰는 명령:
 
@@ -202,6 +245,8 @@ docker compose logs --tail=100
 - `central_backend` 설정은 남아 있지만 현재 주 경로는 `Spring -> Go gRPC 조회`입니다.
 - Docker compose는 현재 HTTP 포트만 publish합니다.
 - 샤오미 공기청정기 miIO 토큰은 자동 추출하지 않습니다.
+- `sensor.v2`의 `static_iaq`, `estimated_eco2_ppm`, `estimated_bvoc_ppm`는 BSEC 출력이 아니라 서버 내부 추정값입니다.
+- non-linux 환경에서는 공기청정기 gRPC가 stub 클라이언트로 동작하고, Linux에서만 실제 miIO 클라이언트를 사용합니다.
 
 ## 관련 스킬
 

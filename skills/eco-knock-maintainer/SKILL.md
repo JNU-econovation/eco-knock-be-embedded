@@ -32,6 +32,13 @@ Keep changes aligned with this repository's existing style before introducing ne
 - Keep package names short and concrete.
 - Keep DTO names explicit when they cross boundaries.
 
+## Language Rules
+
+- Keep user-facing and developer-facing prose in Korean unless there is a clear technical reason not to.
+- Write log messages, error messages, validation messages, comments, and README/document text in Korean.
+- Keep code identifiers such as package names, file names, type names, function names, and protobuf field names aligned with the existing code style, even when the surrounding prose is Korean.
+- When touching nearby code that mixes English and Korean prose, normalize the touched prose to Korean in the same change when practical.
+
 ## gRPC and Error Handling
 
 - Keep protobuf contracts in `proto/...` and generated code in `internal/grpc/pb/...`.

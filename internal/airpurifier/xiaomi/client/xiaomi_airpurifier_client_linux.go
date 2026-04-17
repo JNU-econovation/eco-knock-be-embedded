@@ -1,3 +1,5 @@
+//go:build linux
+
 package client
 
 import (
@@ -5,11 +7,6 @@ import (
 	"eco-knock-be-embedded/internal/airpurifier/xiaomi/config"
 	"eco-knock-be-embedded/internal/airpurifier/xiaomi/util"
 )
-
-type Requester interface {
-	HandShake(ctx context.Context, helloPacket []byte) ([]byte, error)
-	Send(ctx context.Context, request []byte) ([]byte, error)
-}
 
 type Client struct {
 	config config.Config

@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"eco-knock-be-embedded/internal/sensor/airquality/dto"
 	"time"
 )
 
@@ -15,13 +16,15 @@ type SampleDTO struct {
 	MeasuredAt       time.Time
 }
 
-// SensorInternalDTO SensorDTO는 센서 서비스가 발행하는 폴링 결과다.
-type SensorInternalDTO struct {
-	Sample SampleDTO
-	Err    error
+// SensorSnapshotDTO SensorSnapshotDTO는 센서 서비스가 발행하는 최신 raw 샘플과 파생값이다.
+type SensorSnapshotDTO struct {
+	Sample     SampleDTO
+	AirQuality dto.AirQualityDTO
+	MeasuredAt time.Time
 }
 
-type SensorClientRequest struct {
-	DeviceId int
-	Sample   SampleDTO
+// SensorInternalDTO SensorInternalDTO는 센서 서비스가 발행하는 폴링 결과다.
+type SensorInternalDTO struct {
+	Snapshot SensorSnapshotDTO
+	Err      error
 }
