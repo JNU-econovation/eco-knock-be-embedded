@@ -76,6 +76,7 @@ type GetCurrentAirPurifierResponse struct {
 	LedBrightness       *wrapperspb.Int32Value  `protobuf:"bytes,14,opt,name=led_brightness,json=ledBrightness,proto3" json:"led_brightness,omitempty"`
 	Buzzer              *wrapperspb.BoolValue   `protobuf:"bytes,15,opt,name=buzzer,proto3" json:"buzzer,omitempty"`
 	ChildLock           bool                    `protobuf:"varint,16,opt,name=child_lock,json=childLock,proto3" json:"child_lock,omitempty"`
+	MeasuredAtUnixMs    int64                   `protobuf:"varint,17,opt,name=measured_at_unix_ms,json=measuredAtUnixMs,proto3" json:"measured_at_unix_ms,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -222,12 +223,19 @@ func (x *GetCurrentAirPurifierResponse) GetChildLock() bool {
 	return false
 }
 
+func (x *GetCurrentAirPurifierResponse) GetMeasuredAtUnixMs() int64 {
+	if x != nil {
+		return x.MeasuredAtUnixMs
+	}
+	return 0
+}
+
 var File_proto_airpurifier_v1_airpurifier_proto protoreflect.FileDescriptor
 
 const file_proto_airpurifier_v1_airpurifier_proto_rawDesc = "" +
 	"\n" +
 	"&proto/airpurifier/v1/airpurifier.proto\x12\x0eairpurifier.v1\x1a\x1egoogle/protobuf/wrappers.proto\"\x1e\n" +
-	"\x1cGetCurrentAirPurifierRequest\"\xe6\x04\n" +
+	"\x1cGetCurrentAirPurifierRequest\"\x95\x05\n" +
 	"\x1dGetCurrentAirPurifierResponse\x12\x14\n" +
 	"\x05power\x18\x01 \x01(\tR\x05power\x12\x13\n" +
 	"\x05is_on\x18\x02 \x01(\bR\x04isOn\x12\x10\n" +
@@ -248,7 +256,8 @@ const file_proto_airpurifier_v1_airpurifier_proto_rawDesc = "" +
 	"\x0eled_brightness\x18\x0e \x01(\v2\x1b.google.protobuf.Int32ValueR\rledBrightness\x122\n" +
 	"\x06buzzer\x18\x0f \x01(\v2\x1a.google.protobuf.BoolValueR\x06buzzer\x12\x1d\n" +
 	"\n" +
-	"child_lock\x18\x10 \x01(\bR\tchildLock2\x8a\x01\n" +
+	"child_lock\x18\x10 \x01(\bR\tchildLock\x12-\n" +
+	"\x13measured_at_unix_ms\x18\x11 \x01(\x03R\x10measuredAtUnixMs2\x8a\x01\n" +
 	"\x12AirPurifierService\x12t\n" +
 	"\x15GetCurrentAirPurifier\x12,.airpurifier.v1.GetCurrentAirPurifierRequest\x1a-.airpurifier.v1.GetCurrentAirPurifierResponseBEZCeco-knock-be-embedded/internal/grpc/pb/airpurifier/v1;airpurifierpbb\x06proto3"
 

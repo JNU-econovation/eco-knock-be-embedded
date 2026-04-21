@@ -2,11 +2,8 @@ package main
 
 import (
 	"eco-knock-be-embedded/internal/common/config"
-	"eco-knock-be-embedded/internal/common/middleware"
-	"fmt"
 	"log"
 
-	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
 
@@ -21,9 +18,6 @@ func main() {
 }
 
 func run() error {
-	r := gin.Default()
-	r.Use(middleware.HandleErrors())
-
 	conf := config.MustLoad(configPath)
 
 	stopGRPCServer, err := startGRPCServer(conf)
@@ -32,5 +26,5 @@ func run() error {
 	}
 	defer stopGRPCServer()
 
-	return r.Run(fmt.Sprintf(":%d", conf.ServerHTTPPort))
+	return startRESTServer(conf)
 }

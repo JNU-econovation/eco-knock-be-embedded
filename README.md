@@ -33,6 +33,7 @@
   - 팬 속도
   - LED, 부저, 차일드락
 - 라즈베리파이에서 `gRPC` 서버 실행
+- Prometheus scrape용 `GET /metrics` 제공
 - 개발 PC에서 Docker 이미지를 빌드하고 Raspberry Pi에서 실행하는 배포 흐름
 
 현재 기준으로 중앙 서버가 이 서버를 조회하는 주 인터페이스는 `gRPC`입니다.
@@ -40,7 +41,7 @@
 ## 주요 디렉토리
 
 - `cmd/server`
-  - 서버 부팅과 gRPC 서버 wiring
+  - 서버 부팅과 REST, gRPC 서버 wiring
 - `internal/sensor`
   - BME680 읽기와 센서 조회 서비스
 - `internal/airpurifier/xiaomi`
@@ -98,6 +99,7 @@ air_purifier:
 ```env
 SERVER_HTTP_PORT=19090
 SERVER_GRPC_PORT=6565
+NODE_EXPORTER_HTTP_PORT=9100
 
 CENTRAL_BACKEND_HOST=192.168.0.11
 CENTRAL_BACKEND_HTTP_PORT=18080
@@ -118,6 +120,8 @@ AIR_PURIFIER_TIMEOUT=3s
   - Gin HTTP 서버 포트
 - `SERVER_GRPC_PORT`
   - 외부 서버가 상태 조회에 사용하는 gRPC 포트
+- `NODE_EXPORTER_HTTP_PORT`
+  - node exporter가 Raspberry Pi 호스트 CPU, 메모리, 네트워크, 디스크 I/O metrics를 노출하는 포트
 - `SENSOR_I2C_DEVICE`
   - Raspberry Pi의 I2C 디바이스 경로
 - `SENSOR_I2C_ADDRESS`
@@ -154,6 +158,29 @@ go test ./...
 ```
 
 현재 Gin HTTP 서버는 실행되지만, 비즈니스 HTTP 엔드포인트는 아직 없습니다. 실제 상태 조회 인터페이스는 gRPC입니다.
+
+Prometheus metrics:
+
+```powershell
+curl http://localhost:19090/metrics
+```
+
+애플리케이션 metrics는 `GET /metrics`에서 노출합니다. Raspberry Pi 호스트 리소스 metrics는 compose의 `node-exporter` 서비스가 `NODE_EXPORTER_HTTP_PORT`로 노출합니다.
+
+## Docker Compose
+
+개발용 compose:
+
+```powershell
+docker compose up --build
+```
+
+개발용 `docker-compose.yml`은 다음 서비스를 실행합니다.
+
+- `node-exporter`
+  - Windows 개발 환경에서 `NODE_EXPORTER_HTTP_PORT`를 publish해서 `/metrics` 확인
+
+개발 환경에서 앱 서버까지 실행할 때는 별도로 `go run ./cmd/server`를 사용합니다. Raspberry Pi용 compose 파일은 `docker-compose.pi.yml`이며, Pi에서는 node exporter를 host network로 실행합니다.
 
 ## gRPC 계약
 
@@ -205,18 +232,21 @@ Shell:
 배포 스크립트가 하는 일:
 
 1. 개발 PC에서 `linux/arm64` 이미지 빌드
-2. Pi에 `docker-compose.yml`, `.env` 전송
+2. Pi에 `docker-compose.pi.yml`, `.env` 전송
 3. Docker 이미지를 `docker load`로 Pi에 적재
 4. Pi에서 `docker compose up -d`
 
-`docker-compose.yml`은 현재 다음 특징을 가집니다.
+배포 스크립트는 `docker-compose.pi.yml`을 Pi의 배포 디렉토리에 `docker-compose.yml` 이름으로 전송합니다.
+
+`docker-compose.pi.yml`은 현재 다음 특징을 가집니다.
 
 - `linux/arm64` 기준
 - `/dev/i2c-1` 디바이스 마운트
 - 컨테이너를 root로 실행
-- HTTP 포트만 publish
+- 앱 HTTP 포트 publish
+- node exporter를 host network로 실행해서 Pi 호스트 metrics 노출
 
-즉 현재 compose는 `SERVER_HTTP_PORT`만 외부로 열고, `SERVER_GRPC_PORT`는 publish하지 않습니다.
+즉 Pi용 compose는 `SERVER_HTTP_PORT`를 publish하고, node exporter는 host network에서 `NODE_EXPORTER_HTTP_PORT`로 노출합니다. `SERVER_GRPC_PORT`는 publish하지 않습니다.
 
 ## Raspberry Pi 센서 연결
 
@@ -241,9 +271,10 @@ docker compose logs --tail=100
 ## 현재 제약 사항
 
 - HTTP 비즈니스 API는 아직 없습니다.
+- Prometheus용 HTTP 엔드포인트는 `GET /metrics`만 제공합니다.
 - 공기청정기 gRPC는 현재 조회만 있고 제어 RPC는 없습니다.
 - `central_backend` 설정은 남아 있지만 현재 주 경로는 `Spring -> Go gRPC 조회`입니다.
-- Docker compose는 현재 HTTP 포트만 publish합니다.
+- Pi용 Docker compose는 현재 앱 HTTP 포트만 publish하고, node exporter는 host network로 노출합니다.
 - 샤오미 공기청정기 miIO 토큰은 자동 추출하지 않습니다.
 - `sensor.v2`의 `static_iaq`, `estimated_eco2_ppm`, `estimated_bvoc_ppm`는 BSEC 출력이 아니라 서버 내부 추정값입니다.
 - non-linux 환경에서는 공기청정기 gRPC가 stub 클라이언트로 동작하고, Linux에서만 실제 miIO 클라이언트를 사용합니다.
