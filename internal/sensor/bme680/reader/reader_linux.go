@@ -1,4 +1,4 @@
-//go:build linux
+//go:build linux && !sensor_stub
 
 package reader
 

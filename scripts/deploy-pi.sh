@@ -14,7 +14,7 @@ PI_SSH_PORT="${PI_SSH_PORT:-22}"
 PI_APP_DIR="${PI_APP_DIR:-/home/${PI_USER}/eco-knock-be-embedded}"
 IMAGE_NAME="${IMAGE_NAME:-eco-knock-be-embedded:arm64}"
 DOCKER_PLATFORM="${DOCKER_PLATFORM:-linux/arm64}"
-COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
+COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.pi.yml}"
 
 case "${PI_APP_DIR}" in
   "~")
@@ -37,13 +37,18 @@ for command_name in docker ssh scp; do
   fi
 done
 
+if [ ! -f "${COMPOSE_FILE}" ]; then
+  echo "Compose file does not exist: ${COMPOSE_FILE}"
+  exit 1
+fi
+
 echo "[1/5] Building image ${IMAGE_NAME} for ${DOCKER_PLATFORM}"
 docker buildx build --platform "${DOCKER_PLATFORM}" -t "${IMAGE_NAME}" --load .
 
 echo "[2/5] Preparing remote directory ${PI_APP_DIR}"
 ssh -p "${PI_SSH_PORT}" "${PI_USER}@${PI_HOST}" "mkdir -p '${PI_APP_DIR}'"
 
-echo "[3/5] Transferring runtime files"
+echo "[3/5] Transferring runtime files from ${COMPOSE_FILE}"
 scp -P "${PI_SSH_PORT}" "${COMPOSE_FILE}" "${PI_USER}@${PI_HOST}:${PI_APP_DIR}/docker-compose.yml"
 scp -P "${PI_SSH_PORT}" ".env" "${PI_USER}@${PI_HOST}:${PI_APP_DIR}/.env"
 

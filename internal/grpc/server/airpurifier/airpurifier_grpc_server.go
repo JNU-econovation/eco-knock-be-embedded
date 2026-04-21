@@ -3,6 +3,7 @@ package airpurifier
 import (
 	"context"
 	"errors"
+	"time"
 
 	airservice "eco-knock-be-embedded/internal/airpurifier/xiaomi/service"
 	"eco-knock-be-embedded/internal/common/apperror"
@@ -51,6 +52,7 @@ func (server *GRPCServer) GetCurrentAirPurifier(
 		PurifyVolume:        int32(result.PurifyVolume),
 		Led:                 result.LED,
 		ChildLock:           result.ChildLock,
+		MeasuredAtUnixMs:    time.Now().UnixMilli(),
 	}
 
 	if result.Temperature != nil {

@@ -9,11 +9,15 @@ RUN go mod download
 
 COPY . .
 
-ARG TARGETOS=linux
-ARG TARGETARCH=arm64
+ARG TARGETOS
+ARG TARGETARCH
+ARG GO_TAGS
 
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-    go build -o /out/server ./cmd/server
+RUN set -eu; \
+    build_tags=""; \
+    if [ -n "${GO_TAGS:-}" ]; then build_tags="-tags=${GO_TAGS}"; fi; \
+    CGO_ENABLED=0 GOOS="${TARGETOS:-linux}" GOARCH="${TARGETARCH:-amd64}" \
+    go build ${build_tags} -o /out/server ./cmd/server
 
 FROM gcr.io/distroless/static-debian12:nonroot
 
