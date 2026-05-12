@@ -13,6 +13,7 @@ type ErrorCode int
 const (
 	InternalServer ErrorCode = iota + 1
 	SensorReadFailed
+	LightSensorReadFailed
 	AirPurifierReadFailed
 )
 
@@ -38,6 +39,13 @@ var metas = map[ErrorCode]Meta{
 		GRPCCode: codes.Unavailable,
 		Number:   1,
 		Message:  "센서 읽기에 실패했습니다",
+	},
+	LightSensorReadFailed: {
+		Domain:   constant.DomainLightSensor,
+		Status:   http.StatusServiceUnavailable,
+		GRPCCode: codes.Unavailable,
+		Number:   1,
+		Message:  "조도 센서 읽기에 실패했습니다",
 	},
 	AirPurifierReadFailed: {
 		Domain:   constant.DomainAirPurifier,
