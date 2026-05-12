@@ -4,10 +4,14 @@ import (
 	airservice "eco-knock-be-embedded/internal/airpurifier/xiaomi/service"
 	commonconfig "eco-knock-be-embedded/internal/common/config"
 	airpurifierpb "eco-knock-be-embedded/internal/grpc/pb/airpurifier/v1"
+	lightsensorpb "eco-knock-be-embedded/internal/grpc/pb/lightsensor"
 	sensorv1pb "eco-knock-be-embedded/internal/grpc/pb/sensor/v1"
 	sensorv2pb "eco-knock-be-embedded/internal/grpc/pb/sensor/v2"
 	airpurifiergrpc "eco-knock-be-embedded/internal/grpc/server/airpurifier"
+	lightsensorgrpc "eco-knock-be-embedded/internal/grpc/server/lightsensor"
 	sensorgrpc "eco-knock-be-embedded/internal/grpc/server/sensor"
+	lightsensorservice "eco-knock-be-embedded/internal/lightsensor/service"
+	veml7700reader "eco-knock-be-embedded/internal/lightsensor/veml7700/reader"
 	airqualityservice "eco-knock-be-embedded/internal/sensor/airquality/service"
 	airqualitystore "eco-knock-be-embedded/internal/sensor/airquality/store"
 	bme680reader "eco-knock-be-embedded/internal/sensor/bme680/reader"
@@ -33,8 +37,16 @@ func startGRPCServer(commonConfig commonconfig.CommonConfig) (func(), error) {
 		return nil, err
 	}
 
+	stopLightSensorGRPCServer, err := startLightSensorGRPCServer(grpcServer, commonConfig)
+	if err != nil {
+		stopSensorGRPCServer()
+		_ = listener.Close()
+		return nil, err
+	}
+
 	stopAirPurifierGRPCServer, err := startAirPurifierGRPCServer(grpcServer, commonConfig)
 	if err != nil {
+		stopLightSensorGRPCServer()
 		stopSensorGRPCServer()
 		_ = listener.Close()
 		return nil, err
@@ -49,6 +61,7 @@ func startGRPCServer(commonConfig commonconfig.CommonConfig) (func(), error) {
 	return func() {
 		grpcServer.GracefulStop()
 		stopAirPurifierGRPCServer()
+		stopLightSensorGRPCServer()
 		stopSensorGRPCServer()
 		_ = listener.Close()
 	}, nil
@@ -111,6 +124,43 @@ func startSensorGRPCServer(grpcServer *grpc.Server, commonConfig commonconfig.Co
 
 	return func() {
 		_ = sensorQueryService.Close()
+	}, nil
+}
+
+func startLightSensorGRPCServer(grpcServer *grpc.Server, commonConfig commonconfig.CommonConfig) (func(), error) {
+	runtimeConfig, err := resolveLightSensorRuntimeConfig(commonConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	lightSensorReader, err := veml7700reader.Open(runtimeConfig.readerConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	lightSensorService, err := lightsensorservice.New(
+		lightSensorReader,
+		runtimeConfig.readerConfig.PollInterval,
+	)
+	if err != nil {
+		_ = lightSensorReader.Close()
+		return nil, err
+	}
+	if err := lightSensorService.Start(); err != nil {
+		_ = lightSensorService.Close()
+		return nil, err
+	}
+
+	lightSensorGRPCServer, err := lightsensorgrpc.NewGRPCServer(lightSensorService)
+	if err != nil {
+		_ = lightSensorService.Close()
+		return nil, err
+	}
+
+	lightsensorpb.RegisterLightSensorServiceServer(grpcServer, lightSensorGRPCServer)
+
+	return func() {
+		_ = lightSensorService.Close()
 	}, nil
 }
 
