@@ -31,6 +31,9 @@ type CommonConfig struct {
 	SensorAirQualityLearningDuration             time.Duration
 	SensorAirQualityStabilizationValidSampleGoal int
 	SensorAirQualityLearningValidSampleGoal      int
+	LightSensorI2CDevice                         string
+	LightSensorI2CAddress                        uint8
+	LightSensorPollInterval                      time.Duration
 	AirPurifierAddress                           string
 	AirPurifierToken                             string
 	AirPurifierTimeout                           time.Duration
@@ -66,6 +69,12 @@ type yamlConfig struct {
 			LearningValidSampleGoal      int    `yaml:"learning_valid_sample_goal"`
 		} `yaml:"air_quality"`
 	} `yaml:"sensor"`
+
+	LightSensor struct {
+		I2CDevice    string `yaml:"i2c_device"`
+		I2CAddress   string `yaml:"i2c_address"`
+		PollInterval string `yaml:"poll_interval"`
+	} `yaml:"light_sensor"`
 
 	AirPurifier struct {
 		Address string `yaml:"address"`
@@ -116,16 +125,25 @@ func Load(path string) (CommonConfig, error) {
 		SensorAirQualityHistoryLimit:                 raw.Sensor.AirQuality.HistoryLimit,
 		SensorAirQualityStabilizationValidSampleGoal: raw.Sensor.AirQuality.StabilizationValidSampleGoal,
 		SensorAirQualityLearningValidSampleGoal:      raw.Sensor.AirQuality.LearningValidSampleGoal,
+		LightSensorI2CDevice:                         raw.LightSensor.I2CDevice,
 		AirPurifierAddress:                           raw.AirPurifier.Address,
 		AirPurifierToken:                             raw.AirPurifier.Token,
 	}
 
 	if raw.Sensor.I2CAddress != "" {
-		address, err := parseI2CAddress(raw.Sensor.I2CAddress)
+		address, err := parseI2CAddress("sensor.i2c_address", raw.Sensor.I2CAddress)
 		if err != nil {
 			return CommonConfig{}, err
 		}
 		config.SensorI2CAddress = address
+	}
+
+	if raw.LightSensor.I2CAddress != "" {
+		address, err := parseI2CAddress("light_sensor.i2c_address", raw.LightSensor.I2CAddress)
+		if err != nil {
+			return CommonConfig{}, err
+		}
+		config.LightSensorI2CAddress = address
 	}
 
 	if raw.Sensor.HeaterDuration != "" {
@@ -142,6 +160,14 @@ func Load(path string) (CommonConfig, error) {
 			return CommonConfig{}, fmt.Errorf("sensor.poll_interval 값이 올바르지 않습니다: %w", err)
 		}
 		config.SensorPollInterval = duration
+	}
+
+	if raw.LightSensor.PollInterval != "" {
+		duration, err := time.ParseDuration(raw.LightSensor.PollInterval)
+		if err != nil {
+			return CommonConfig{}, fmt.Errorf("light_sensor.poll_interval 값이 올바르지 않습니다: %w", err)
+		}
+		config.LightSensorPollInterval = duration
 	}
 
 	if raw.Sensor.AirQuality.StabilizationDuration != "" {
@@ -221,14 +247,23 @@ func (config CommonConfig) Validate() error {
 	if config.SensorAirQualityLearningValidSampleGoal <= 0 {
 		return fmt.Errorf("sensor.air_quality.learning_valid_sample_goal 값이 필요합니다")
 	}
+	if config.LightSensorI2CDevice == "" {
+		return fmt.Errorf("light_sensor.i2c_device 값이 필요합니다")
+	}
+	if config.LightSensorI2CAddress == 0 {
+		return fmt.Errorf("light_sensor.i2c_address 값이 필요합니다")
+	}
+	if config.LightSensorPollInterval <= 0 {
+		return fmt.Errorf("light_sensor.poll_interval 값이 필요합니다")
+	}
 
 	return nil
 }
 
-func parseI2CAddress(value string) (uint8, error) {
+func parseI2CAddress(name string, value string) (uint8, error) {
 	parsed, err := strconv.ParseUint(value, 0, 8)
 	if err != nil {
-		return 0, fmt.Errorf("sensor.i2c_address 값이 올바르지 않습니다: %w", err)
+		return 0, fmt.Errorf("%s 값이 올바르지 않습니다: %w", name, err)
 	}
 
 	return uint8(parsed), nil

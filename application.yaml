@@ -24,6 +24,11 @@ sensor:
     stabilization_valid_sample_goal: 300
     learning_valid_sample_goal: 3600
 
+light_sensor:
+  i2c_device: ${LIGHT_SENSOR_I2C_DEVICE}
+  i2c_address: ${LIGHT_SENSOR_I2C_ADDRESS}
+  poll_interval: 1s
+
 air_purifier:
   address: ${AIR_PURIFIER_ADDRESS}
   token: ${AIR_PURIFIER_TOKEN}

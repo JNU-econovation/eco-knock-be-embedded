@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package lightsensor.v1;
+
+option go_package = "eco-knock-be-embedded/internal/grpc/pb/lightsensor;lightsensorpb";
+
+message GetCurrentLightSensorRequest {}
+
+message GetCurrentLightSensorResponse {
+  double lux = 1;
+  uint32 raw_als = 2;
+  uint32 raw_white = 3;
+  int64 measured_at_unix_ms = 4;
+}
+
+service LightSensorService {
+  rpc GetCurrentLightSensor(GetCurrentLightSensorRequest) returns (GetCurrentLightSensorResponse);
+}
