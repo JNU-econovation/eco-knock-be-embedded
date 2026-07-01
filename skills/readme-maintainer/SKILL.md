@@ -51,5 +51,5 @@ When relevant, check and update:
 
 1. Prefer short sections over long explanations.
 2. Keep command examples executable.
-3. When showing config examples, match `application.yaml`, `.env`, and deploy scripts as they exist now.
+3. When showing config examples, match `application.yaml`, `.env.example`, `.env.dev.example`, `.env.prod.example`, `.env.deploy.example`, and deploy scripts as they exist now.
 4. If terminal output looks garbled because of encoding, do not assume the README must be rewritten in English. Keep the README itself in Korean unless the user says otherwise.
