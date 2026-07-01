@@ -1,10 +1,7 @@
-//go:build !linux || lightsensor_stub
-
 package reader
 
 import (
 	"eco-knock-be-embedded/internal/lightsensor/dto"
-	veml7700config "eco-knock-be-embedded/internal/lightsensor/veml7700/config"
 	"errors"
 	"math"
 	"sync"
@@ -13,29 +10,25 @@ import (
 
 var (
 	ErrUnsupportedPlatform = errors.New("VEML7700 조도 센서 접근은 Linux 환경이 필요합니다")
-	ErrSensorClosed        = errors.New("VEML7700 조도 센서가 이미 종료되었습니다")
+	errStubSensorClosed    = errors.New("VEML7700 조도 센서가 이미 종료되었습니다")
 )
 
-type Sensor struct {
+type stubSensor struct {
 	mu       sync.Mutex
 	closed   bool
 	readings int
 }
 
-func Open(cfg veml7700config.Config) (*Sensor, error) {
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-
-	return &Sensor{}, nil
+func openStub() (*stubSensor, error) {
+	return &stubSensor{}, nil
 }
 
-func (sensor *Sensor) Read() (dto.SampleDTO, error) {
+func (sensor *stubSensor) Read() (dto.SampleDTO, error) {
 	sensor.mu.Lock()
 	defer sensor.mu.Unlock()
 
 	if sensor.closed {
-		return dto.SampleDTO{}, ErrSensorClosed
+		return dto.SampleDTO{}, errStubSensorClosed
 	}
 
 	sensor.readings++
@@ -50,7 +43,7 @@ func (sensor *Sensor) Read() (dto.SampleDTO, error) {
 	}, nil
 }
 
-func (sensor *Sensor) Close() error {
+func (sensor *stubSensor) Close() error {
 	sensor.mu.Lock()
 	defer sensor.mu.Unlock()
 

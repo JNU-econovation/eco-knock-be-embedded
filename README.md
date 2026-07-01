@@ -21,6 +21,10 @@
     - `stabilization_progress_pct`
     - `gas_percentage`
     - `learning_complete_at_unix_ms`
+- `VEML7700` 조도 센서 현재값 조회
+  - lux
+  - raw ALS
+  - raw white
 - 샤오미 공기청정기 2 계열 현재 상태 조회
   - 전원
   - AQI
@@ -34,7 +38,7 @@
   - LED, 부저, 차일드락
 - 라즈베리파이에서 `gRPC` 서버 실행
 - Prometheus scrape용 `GET /metrics` 제공
-- 개발 PC에서 Docker 이미지를 빌드하고 Raspberry Pi에서 실행하는 배포 흐름
+- GHCR 이미지를 Raspberry Pi에서 pull해서 실행하는 배포 흐름
 
 현재 기준으로 중앙 서버가 이 서버를 조회하는 주 인터페이스는 `gRPC`입니다.
 
@@ -52,12 +56,14 @@
   - 공통 설정, 에러, 미들웨어
 - `proto`
   - gRPC 계약
+- `deploy`
+  - 개발/운영 Docker compose와 배포 wrapper
 - `scripts`
-  - proto 생성, Raspberry Pi 배포 스크립트
+  - proto 생성, 기존 배포 명령 호환 wrapper
 
 ## 설정 방식
 
-설정은 `application.yaml`을 읽고, 실제 값은 `.env`에서 주입합니다.
+설정은 `application.yaml`을 읽고, 실제 값은 env 파일에서 주입합니다. 서버는 기본적으로 `.env`를 읽고, `APP_ENV_FILE`이 있으면 해당 파일을 먼저 읽습니다.
 
 `application.yaml`:
 
@@ -73,6 +79,7 @@ central_backend:
   allow_failure: ${ALLOW_CENTRAL_BACKEND_FAILURE}
 
 sensor:
+  reader_mode: ${SENSOR_READER_MODE}
   i2c_device: ${SENSOR_I2C_DEVICE}
   i2c_address: ${SENSOR_I2C_ADDRESS}
   state_db_path: data/sensor_state.db
@@ -88,13 +95,20 @@ sensor:
     stabilization_valid_sample_goal: 300
     learning_valid_sample_goal: 3600
 
+light_sensor:
+  reader_mode: ${LIGHT_SENSOR_READER_MODE}
+  i2c_device: ${LIGHT_SENSOR_I2C_DEVICE}
+  i2c_address: ${LIGHT_SENSOR_I2C_ADDRESS}
+  poll_interval: 1s
+
 air_purifier:
+  client_mode: ${AIR_PURIFIER_CLIENT_MODE}
   address: ${AIR_PURIFIER_ADDRESS}
   token: ${AIR_PURIFIER_TOKEN}
   timeout: ${AIR_PURIFIER_TIMEOUT}
 ```
 
-`.env` 예시:
+공통 `.env` 예시:
 
 ```env
 SERVER_HTTP_PORT=19090
@@ -106,9 +120,15 @@ CENTRAL_BACKEND_HTTP_PORT=18080
 CENTRAL_BACKEND_GRPC_PORT=6565
 ALLOW_CENTRAL_BACKEND_FAILURE=true
 
+SENSOR_READER_MODE=real
 SENSOR_I2C_DEVICE=/dev/i2c-1
 SENSOR_I2C_ADDRESS=0x76
 
+LIGHT_SENSOR_READER_MODE=real
+LIGHT_SENSOR_I2C_DEVICE=/dev/i2c-1
+LIGHT_SENSOR_I2C_ADDRESS=0x10
+
+AIR_PURIFIER_CLIENT_MODE=real
 AIR_PURIFIER_ADDRESS=192.168.0.50:54321
 AIR_PURIFIER_TOKEN=0123456789abcdef0123456789abcdef
 AIR_PURIFIER_TIMEOUT=3s
@@ -122,6 +142,8 @@ AIR_PURIFIER_TIMEOUT=3s
   - 외부 서버가 상태 조회에 사용하는 gRPC 포트
 - `NODE_EXPORTER_HTTP_PORT`
   - node exporter가 Raspberry Pi 호스트 CPU, 메모리, 네트워크, 디스크 I/O metrics를 노출하는 포트
+- `SENSOR_READER_MODE`
+  - BME680 리더 모드. `real` 또는 `stub`
 - `SENSOR_I2C_DEVICE`
   - Raspberry Pi의 I2C 디바이스 경로
 - `SENSOR_I2C_ADDRESS`
@@ -136,6 +158,16 @@ AIR_PURIFIER_TIMEOUT=3s
   - 유효 샘플 몇 개마다 SQLite 상태를 저장할지 결정
 - `sensor.air_quality.*`
   - `sensor.v2` 파생값 계산에 사용하는 history, stabilization, learning 설정
+- `LIGHT_SENSOR_READER_MODE`
+  - VEML7700 리더 모드. `real` 또는 `stub`
+- `LIGHT_SENSOR_I2C_DEVICE`
+  - VEML7700이 연결된 I2C 디바이스 경로
+- `LIGHT_SENSOR_I2C_ADDRESS`
+  - VEML7700 주소. 기본 보드는 보통 `0x10`
+- `light_sensor.poll_interval`
+  - 조도 센서 백그라운드 폴링 주기
+- `AIR_PURIFIER_CLIENT_MODE`
+  - 샤오미 공기청정기 클라이언트 모드. `real`, `stub`, `disabled`
 - `AIR_PURIFIER_ADDRESS`
   - 샤오미 공기청정기 로컬 miIO 주소
 - `AIR_PURIFIER_TOKEN`
@@ -143,7 +175,38 @@ AIR_PURIFIER_TIMEOUT=3s
 - `AIR_PURIFIER_TIMEOUT`
   - 공기청정기 요청 타임아웃
 
+하드웨어 없이 개발할 때는 다음처럼 stub 모드를 사용할 수 있습니다.
+
+```env
+SENSOR_READER_MODE=stub
+LIGHT_SENSOR_READER_MODE=stub
+AIR_PURIFIER_CLIENT_MODE=stub
+```
+
+공기청정기 gRPC 서비스를 등록하지 않으려면 다음 값을 사용합니다.
+
+```env
+AIR_PURIFIER_CLIENT_MODE=disabled
+```
+
 `central_backend` 관련 값은 현재 outbound 연동이 아니라 설정 호환성을 위해 남아 있는 예약 필드입니다.
+
+환경별 파일은 다음처럼 나눠서 사용합니다.
+
+- `.env.dev`
+  - 로컬 개발용. 기본적으로 센서와 공기청정기를 `stub`으로 둡니다.
+- `.env.prod`
+  - Raspberry Pi 운영용. 실제 센서 값은 `real`, 공기청정기는 운영 상황에 맞춰 `real`, `stub`, `disabled` 중 선택합니다.
+- `.env.deploy`
+  - Pi 접속 정보와 배포 대상 파일만 둡니다. 앱 런타임 설정은 넣지 않습니다.
+
+예시 파일은 `.env.example`, `.env.dev.example`, `.env.prod.example`, `.env.deploy.example`로 제공합니다.
+
+로컬에서 `.env.dev`로 실행하려면 다음처럼 실행합니다.
+
+```powershell
+$env:APP_ENV_FILE=".env.dev"; go run ./cmd/server
+```
 
 ## 로컬 실행
 
@@ -172,15 +235,15 @@ curl http://localhost:19090/metrics
 개발용 compose:
 
 ```powershell
-docker compose up --build
+.\deploy\dev\dev.ps1
 ```
 
-개발용 `docker-compose.yml`은 다음 서비스를 실행합니다.
+개발용 compose는 `deploy/dev/docker-compose.yml`입니다. 다음 서비스를 실행합니다.
 
 - `node-exporter`
   - Windows 개발 환경에서 `NODE_EXPORTER_HTTP_PORT`를 publish해서 `/metrics` 확인
 
-개발 환경에서 앱 서버까지 실행할 때는 별도로 `go run ./cmd/server`를 사용합니다. Raspberry Pi용 compose 파일은 `docker-compose.pi.yml`이며, Pi에서는 node exporter를 host network로 실행합니다.
+개발 환경에서 앱 서버까지 실행할 때는 별도로 `go run ./cmd/server`를 사용합니다. Raspberry Pi용 compose 파일은 `deploy/prod/docker-compose.yml`이며, Pi에서는 node exporter를 host network로 실행합니다.
 
 ## gRPC 계약
 
@@ -188,12 +251,14 @@ docker compose up --build
 
 - `sensor.v1.SensorService/GetCurrentSensor`
 - `sensor.v2.SensorService/GetCurrentSensor`
+- `lightsensor.v1.LightSensorService/GetCurrentLightSensor`
 - `airpurifier.v1.AirPurifierService/GetCurrentAirPurifier`
 
 proto 파일:
 
 - [sensor.v1](./proto/sensor/v1/sensor.proto)
 - [sensor.v2](./proto/sensor/v2/sensor.proto)
+- [lightsensor.v1](./proto/lightsensor/v1/lightsensor.proto)
 - [airpurifier.proto](./proto/airpurifier/v1/airpurifier.proto)
 
 센서 버전 구분:
@@ -215,38 +280,68 @@ powershell -ExecutionPolicy Bypass -File .\scripts\gen-proto.ps1
 
 ## Raspberry Pi 배포
 
-현재 기본 배포 흐름은 Raspberry Pi에서 직접 빌드하지 않고, 개발 PC에서 이미지를 빌드해서 Pi에 올리는 방식입니다.
+현재 기본 배포 흐름은 GitHub Actions가 `linux/arm64` 이미지를 GHCR에 push하고, Raspberry Pi가 그 이미지를 pull해서 재시작하는 방식입니다.
+
+이미지:
+
+```text
+ghcr.io/jnu-econovation/eco-knock-be-embedded:latest
+```
 
 PowerShell:
 
 ```powershell
-.\scripts\deploy-pi.ps1
+.\deploy\prod\deploy.ps1
 ```
 
 Shell:
 
 ```bash
-./scripts/deploy-pi.sh
+./deploy/prod/deploy.sh
 ```
+
+기존 명령도 호환 wrapper로 남아 있습니다.
+
+```powershell
+.\scripts\deploy-pi.ps1
+```
+
+`.env.deploy`에는 Pi 접속 정보를 둡니다. `PI_PASSWORD`가 있으면 비밀번호를 자동 입력하고, 없으면 기존 SSH 키/수동 인증 흐름을 사용합니다.
+
+```env
+PI_HOST=192.168.0.10
+PI_USER=pi
+PI_SSH_PORT=22
+PI_APP_DIR=~/eco-knock-be-embedded
+IMAGE_NAME=ghcr.io/jnu-econovation/eco-knock-be-embedded:latest
+COMPOSE_FILE=deploy/prod/docker-compose.yml
+PI_PASSWORD=
+```
+
+`APP_ENV_FILE`은 배포할 앱 env 파일입니다. 기본값은 `.env.prod`이며, 배포 스크립트는 이 파일을 Pi의 `.env`로 전송합니다.
+
+Shell 스크립트에서 `PI_PASSWORD`를 사용하려면 `sshpass`가 필요합니다. PowerShell 스크립트에서 `PI_PASSWORD`를 사용하려면 Python `paramiko` 패키지가 필요합니다.
+`DOCKER_PLATFORM`은 GHCR pull 배포 기본 흐름에서는 사용하지 않고, 로컬 buildx 기반 legacy 배포가 필요할 때만 참고합니다.
 
 배포 스크립트가 하는 일:
 
-1. 개발 PC에서 `linux/arm64` 이미지 빌드
-2. Pi에 `docker-compose.pi.yml`, `.env` 전송
-3. Docker 이미지를 `docker load`로 Pi에 적재
-4. Pi에서 `docker compose up -d`
+1. Pi에 `deploy/prod/docker-compose.yml`, `APP_ENV_FILE` 파일 전송
+2. Pi에서 `docker compose pull`
+3. Pi에서 `docker compose up -d`
+4. Pi에서 `docker compose ps` 출력
 
-배포 스크립트는 `docker-compose.pi.yml`을 Pi의 배포 디렉토리에 `docker-compose.yml` 이름으로 전송합니다.
+배포 스크립트는 `deploy/prod/docker-compose.yml`을 Pi의 배포 디렉토리에 `docker-compose.yml` 이름으로 전송하고, `APP_ENV_FILE` 파일은 Pi의 `.env` 이름으로 전송합니다.
 
-`docker-compose.pi.yml`은 현재 다음 특징을 가집니다.
+`deploy/prod/docker-compose.yml`은 현재 다음 특징을 가집니다.
 
 - `linux/arm64` 기준
+- GHCR 이미지 pull
 - `/dev/i2c-1` 디바이스 마운트
 - 컨테이너를 root로 실행
-- 앱 HTTP 포트 publish
+- 앱 HTTP, gRPC 포트 publish
 - node exporter를 host network로 실행해서 Pi 호스트 metrics 노출
 
-즉 Pi용 compose는 `SERVER_HTTP_PORT`를 publish하고, node exporter는 host network에서 `NODE_EXPORTER_HTTP_PORT`로 노출합니다. `SERVER_GRPC_PORT`는 publish하지 않습니다.
+즉 Pi용 compose는 `SERVER_HTTP_PORT`, `SERVER_GRPC_PORT`를 publish하고, node exporter는 host network에서 `NODE_EXPORTER_HTTP_PORT`로 노출합니다.
 
 ## Raspberry Pi 센서 연결
 
@@ -257,6 +352,12 @@ BME680은 현재 다음 기준으로 동작합니다.
 - 백그라운드 폴링: 기본 `1s`
 - 상태 저장: SQLite checkpoint, 기본 `60`개 유효 샘플마다 저장
 
+VEML7700 조도 센서는 현재 다음 기준으로 동작합니다.
+
+- I2C 디바이스: `/dev/i2c-1`
+- 주소: `0x10`
+- 백그라운드 폴링: 기본 `1s`
+
 Pi에서 점검할 때 자주 쓰는 명령:
 
 ```bash
@@ -266,7 +367,7 @@ docker ps
 docker compose logs --tail=100
 ```
 
-정상 인식이면 `i2cdetect -y 1` 결과에 `76`이 보여야 합니다.
+정상 인식이면 `i2cdetect -y 1` 결과에 BME680 주소 `76` 또는 `77`, VEML7700 주소 `10`이 보여야 합니다.
 
 ## 현재 제약 사항
 
@@ -274,10 +375,10 @@ docker compose logs --tail=100
 - Prometheus용 HTTP 엔드포인트는 `GET /metrics`만 제공합니다.
 - 공기청정기 gRPC는 현재 조회만 있고 제어 RPC는 없습니다.
 - `central_backend` 설정은 남아 있지만 현재 주 경로는 `Spring -> Go gRPC 조회`입니다.
-- Pi용 Docker compose는 현재 앱 HTTP 포트만 publish하고, node exporter는 host network로 노출합니다.
+- Pi용 Docker compose는 현재 앱 HTTP, gRPC 포트를 publish하고, node exporter는 host network로 노출합니다.
 - 샤오미 공기청정기 miIO 토큰은 자동 추출하지 않습니다.
 - `sensor.v2`의 `static_iaq`, `estimated_eco2_ppm`, `estimated_bvoc_ppm`는 BSEC 출력이 아니라 서버 내부 추정값입니다.
-- non-linux 환경에서는 공기청정기 gRPC가 stub 클라이언트로 동작하고, Linux에서만 실제 miIO 클라이언트를 사용합니다.
+- 센서와 공기청정기는 환경변수 mode로 `real` 또는 `stub`을 선택합니다. 실제 하드웨어 접근은 Linux 환경이 필요합니다.
 
 ## 관련 스킬
 

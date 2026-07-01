@@ -1,9 +1,8 @@
-//go:build !linux
-
 package test
 
 import (
 	"context"
+	"eco-knock-be-embedded/internal/airpurifier/xiaomi/client"
 	airconfig "eco-knock-be-embedded/internal/airpurifier/xiaomi/config"
 	"eco-knock-be-embedded/internal/airpurifier/xiaomi/service"
 	"testing"
@@ -18,7 +17,7 @@ func TestStatusUsesStubClientOnNonLinux(t *testing.T) {
 		t.Fatalf("unexpected new config error: %v", err)
 	}
 
-	airPurifierService, err := service.New(conf)
+	airPurifierService, err := service.NewWithClientMode(conf, client.ModeStub, nil)
 	if err != nil {
 		t.Fatalf("unexpected new service error: %v", err)
 	}

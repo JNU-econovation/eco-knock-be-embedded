@@ -1,4 +1,6 @@
 .idea
 .env
+.env.dev
+.env.prod
 .env.deploy
 data/
