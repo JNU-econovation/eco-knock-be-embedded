@@ -38,11 +38,19 @@ type session struct {
 }
 
 func New(config Config) (*XiaomiAirPurifierService, error) {
-	return NewWithClient(config, nil)
+	return NewWithClientMode(config, client.ModeReal, nil)
 }
 
 func NewWithClient(
 	config Config,
+	miioClient client.Requester,
+) (*XiaomiAirPurifierService, error) {
+	return NewWithClientMode(config, client.ModeReal, miioClient)
+}
+
+func NewWithClientMode(
+	config Config,
+	clientMode string,
 	miioClient client.Requester,
 ) (*XiaomiAirPurifierService, error) {
 	if config.Address == "" {
@@ -59,7 +67,11 @@ func NewWithClient(
 	}
 
 	if miioClient == nil {
-		miioClient = client.New(config)
+		var err error
+		miioClient, err = client.New(config, clientMode)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &XiaomiAirPurifierService{

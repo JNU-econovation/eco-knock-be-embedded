@@ -18,6 +18,7 @@ type CommonConfig struct {
 	CentralBackendHTTPPort                       int
 	CentralBackendGRPCPort                       int
 	AllowCentralBackendFailure                   bool
+	SensorReaderMode                             string
 	SensorI2CDevice                              string
 	SensorI2CAddress                             uint8
 	SensorStateDBPath                            string
@@ -31,13 +32,24 @@ type CommonConfig struct {
 	SensorAirQualityLearningDuration             time.Duration
 	SensorAirQualityStabilizationValidSampleGoal int
 	SensorAirQualityLearningValidSampleGoal      int
+	LightSensorReaderMode                        string
 	LightSensorI2CDevice                         string
 	LightSensorI2CAddress                        uint8
 	LightSensorPollInterval                      time.Duration
+	AirPurifierClientMode                        string
 	AirPurifierAddress                           string
 	AirPurifierToken                             string
 	AirPurifierTimeout                           time.Duration
 }
+
+const (
+	ReaderModeReal = "real"
+	ReaderModeStub = "stub"
+
+	AirPurifierClientModeReal     = "real"
+	AirPurifierClientModeStub     = "stub"
+	AirPurifierClientModeDisabled = "disabled"
+)
 
 type yamlConfig struct {
 	Server struct {
@@ -53,6 +65,7 @@ type yamlConfig struct {
 	} `yaml:"central_backend"`
 
 	Sensor struct {
+		ReaderMode                  string `yaml:"reader_mode"`
 		I2CDevice                   string `yaml:"i2c_device"`
 		I2CAddress                  string `yaml:"i2c_address"`
 		StateDBPath                 string `yaml:"state_db_path"`
@@ -71,15 +84,17 @@ type yamlConfig struct {
 	} `yaml:"sensor"`
 
 	LightSensor struct {
+		ReaderMode   string `yaml:"reader_mode"`
 		I2CDevice    string `yaml:"i2c_device"`
 		I2CAddress   string `yaml:"i2c_address"`
 		PollInterval string `yaml:"poll_interval"`
 	} `yaml:"light_sensor"`
 
 	AirPurifier struct {
-		Address string `yaml:"address"`
-		Token   string `yaml:"token"`
-		Timeout string `yaml:"timeout"`
+		ClientMode string `yaml:"client_mode"`
+		Address    string `yaml:"address"`
+		Token      string `yaml:"token"`
+		Timeout    string `yaml:"timeout"`
 	} `yaml:"air_purifier"`
 }
 
@@ -117,6 +132,7 @@ func Load(path string) (CommonConfig, error) {
 		CentralBackendHTTPPort:                       raw.CentralBackend.HTTPPort,
 		CentralBackendGRPCPort:                       raw.CentralBackend.GRPCPort,
 		AllowCentralBackendFailure:                   raw.CentralBackend.AllowFailure,
+		SensorReaderMode:                             raw.Sensor.ReaderMode,
 		SensorI2CDevice:                              raw.Sensor.I2CDevice,
 		SensorStateDBPath:                            raw.Sensor.StateDBPath,
 		SensorHeaterTempC:                            raw.Sensor.HeaterTempC,
@@ -125,7 +141,9 @@ func Load(path string) (CommonConfig, error) {
 		SensorAirQualityHistoryLimit:                 raw.Sensor.AirQuality.HistoryLimit,
 		SensorAirQualityStabilizationValidSampleGoal: raw.Sensor.AirQuality.StabilizationValidSampleGoal,
 		SensorAirQualityLearningValidSampleGoal:      raw.Sensor.AirQuality.LearningValidSampleGoal,
+		LightSensorReaderMode:                        raw.LightSensor.ReaderMode,
 		LightSensorI2CDevice:                         raw.LightSensor.I2CDevice,
+		AirPurifierClientMode:                        raw.AirPurifier.ClientMode,
 		AirPurifierAddress:                           raw.AirPurifier.Address,
 		AirPurifierToken:                             raw.AirPurifier.Token,
 	}
@@ -210,12 +228,17 @@ func (config CommonConfig) Validate() error {
 		return fmt.Errorf("server.grpc_port 값이 필요합니다")
 	}
 
-	if config.SensorI2CDevice == "" {
-		return fmt.Errorf("sensor.i2c_device 값이 필요합니다")
+	if err := validateReaderMode("sensor.reader_mode", config.SensorReaderMode); err != nil {
+		return err
 	}
+	if config.SensorReaderMode == ReaderModeReal {
+		if config.SensorI2CDevice == "" {
+			return fmt.Errorf("sensor.i2c_device 값이 필요합니다")
+		}
 
-	if config.SensorI2CAddress == 0 {
-		return fmt.Errorf("sensor.i2c_address 값이 필요합니다")
+		if config.SensorI2CAddress == 0 {
+			return fmt.Errorf("sensor.i2c_address 값이 필요합니다")
+		}
 	}
 	if config.SensorStateDBPath == "" {
 		return fmt.Errorf("sensor.state_db_path 값이 필요합니다")
@@ -247,17 +270,58 @@ func (config CommonConfig) Validate() error {
 	if config.SensorAirQualityLearningValidSampleGoal <= 0 {
 		return fmt.Errorf("sensor.air_quality.learning_valid_sample_goal 값이 필요합니다")
 	}
-	if config.LightSensorI2CDevice == "" {
-		return fmt.Errorf("light_sensor.i2c_device 값이 필요합니다")
+	if err := validateReaderMode("light_sensor.reader_mode", config.LightSensorReaderMode); err != nil {
+		return err
 	}
-	if config.LightSensorI2CAddress == 0 {
-		return fmt.Errorf("light_sensor.i2c_address 값이 필요합니다")
+	if config.LightSensorReaderMode == ReaderModeReal {
+		if config.LightSensorI2CDevice == "" {
+			return fmt.Errorf("light_sensor.i2c_device 값이 필요합니다")
+		}
+		if config.LightSensorI2CAddress == 0 {
+			return fmt.Errorf("light_sensor.i2c_address 값이 필요합니다")
+		}
 	}
 	if config.LightSensorPollInterval <= 0 {
 		return fmt.Errorf("light_sensor.poll_interval 값이 필요합니다")
 	}
+	if err := validateAirPurifierClientMode("air_purifier.client_mode", config.AirPurifierClientMode); err != nil {
+		return err
+	}
+	if config.AirPurifierClientMode == AirPurifierClientModeReal {
+		if config.AirPurifierAddress == "" {
+			return fmt.Errorf("air_purifier.address 값이 필요합니다")
+		}
+		if config.AirPurifierToken == "" {
+			return fmt.Errorf("air_purifier.token 값이 필요합니다")
+		}
+		if config.AirPurifierTimeout <= 0 {
+			return fmt.Errorf("air_purifier.timeout 값이 필요합니다")
+		}
+	}
 
 	return nil
+}
+
+func validateReaderMode(name string, value string) error {
+	switch value {
+	case ReaderModeReal, ReaderModeStub:
+		return nil
+	case "":
+		return fmt.Errorf("%s 값이 필요합니다", name)
+	default:
+		return fmt.Errorf("%s 값은 real 또는 stub이어야 합니다", name)
+	}
+}
+
+func validateAirPurifierClientMode(name string, value string) error {
+	switch value {
+	case AirPurifierClientModeReal, AirPurifierClientModeStub, AirPurifierClientModeDisabled:
+		return nil
+	case "":
+		return fmt.Errorf("%s 값이 필요합니다", name)
+	default:
+		return fmt.Errorf("%s 값은 real, stub, disabled 중 하나여야 합니다", name)
+	}
 }
 
 func parseI2CAddress(name string, value string) (uint8, error) {

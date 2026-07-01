@@ -1,4 +1,4 @@
-//go:build linux && !lightsensor_stub
+//go:build linux
 
 package reader
 
@@ -31,9 +31,9 @@ const (
 	startupDelay          = 130 * time.Millisecond
 )
 
-var ErrSensorClosed = errors.New("VEML7700 조도 센서가 이미 종료되었습니다")
+var errRealSensorClosed = errors.New("VEML7700 조도 센서가 이미 종료되었습니다")
 
-type Sensor struct {
+type realSensor struct {
 	mu     sync.Mutex
 	bus    i2c.BusCloser
 	dev    *i2c.Dev
@@ -41,7 +41,7 @@ type Sensor struct {
 	closed bool
 }
 
-func Open(cfg veml7700config.Config) (*Sensor, error) {
+func openReal(cfg veml7700config.Config) (*realSensor, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func Open(cfg veml7700config.Config) (*Sensor, error) {
 		return nil, fmt.Errorf("I2C 버스 %d 열기에 실패했습니다: %w", busNumber, err)
 	}
 
-	sensor := &Sensor{
+	sensor := &realSensor{
 		bus:    bus,
 		dev:    &i2c.Dev{Bus: bus, Addr: uint16(cfg.I2CAddress)},
 		config: cfg,
@@ -70,12 +70,12 @@ func Open(cfg veml7700config.Config) (*Sensor, error) {
 	return sensor, nil
 }
 
-func (sensor *Sensor) Read() (dto.SampleDTO, error) {
+func (sensor *realSensor) Read() (dto.SampleDTO, error) {
 	sensor.mu.Lock()
 	defer sensor.mu.Unlock()
 
 	if sensor.closed {
-		return dto.SampleDTO{}, ErrSensorClosed
+		return dto.SampleDTO{}, errRealSensorClosed
 	}
 
 	rawALS, err := sensor.readWord(regALSData)
@@ -96,7 +96,7 @@ func (sensor *Sensor) Read() (dto.SampleDTO, error) {
 	}, nil
 }
 
-func (sensor *Sensor) Close() error {
+func (sensor *realSensor) Close() error {
 	sensor.mu.Lock()
 	defer sensor.mu.Unlock()
 
@@ -108,7 +108,7 @@ func (sensor *Sensor) Close() error {
 	return sensor.bus.Close()
 }
 
-func (sensor *Sensor) init() error {
+func (sensor *realSensor) init() error {
 	id, err := sensor.readWord(regID)
 	if err != nil {
 		return fmt.Errorf("디바이스 ID 읽기에 실패했습니다: %w", err)
@@ -126,7 +126,7 @@ func (sensor *Sensor) init() error {
 	return nil
 }
 
-func (sensor *Sensor) readWord(reg byte) (uint16, error) {
+func (sensor *realSensor) readWord(reg byte) (uint16, error) {
 	var data [2]byte
 	if err := sensor.dev.Tx([]byte{reg}, data[:]); err != nil {
 		return 0, err
@@ -135,7 +135,7 @@ func (sensor *Sensor) readWord(reg byte) (uint16, error) {
 	return binary.LittleEndian.Uint16(data[:]), nil
 }
 
-func (sensor *Sensor) writeWord(reg byte, value uint16) error {
+func (sensor *realSensor) writeWord(reg byte, value uint16) error {
 	var data [3]byte
 	data[0] = reg
 	binary.LittleEndian.PutUint16(data[1:], value)

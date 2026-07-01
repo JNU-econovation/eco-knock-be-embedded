@@ -3,6 +3,7 @@ package main
 import (
 	"eco-knock-be-embedded/internal/common/config"
 	"log"
+	"os"
 
 	"github.com/joho/godotenv"
 )
@@ -10,7 +11,11 @@ import (
 const configPath = "application.yaml"
 
 func main() {
-	_ = godotenv.Load(".env")
+	envFile := os.Getenv("APP_ENV_FILE")
+	if envFile == "" {
+		envFile = ".env"
+	}
+	_ = godotenv.Load(envFile)
 
 	if err := run(); err != nil {
 		log.Fatalf("서버 실행에 실패했습니다: %v", err)
