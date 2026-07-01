@@ -1,5 +1,3 @@
-//go:build !linux
-
 package client
 
 import (
@@ -16,7 +14,7 @@ import (
 	"time"
 )
 
-type Client struct {
+type stubClient struct {
 	config   config.Config
 	mu       sync.Mutex
 	deviceID [4]byte
@@ -42,8 +40,8 @@ type stubState struct {
 	ChildLock           string
 }
 
-func New(config config.Config) *Client {
-	return &Client{
+func newStubClient(config config.Config) *stubClient {
+	return &stubClient{
 		config:   config,
 		deviceID: [4]byte{0x11, 0x22, 0x33, 0x44},
 		stamp:    uint32(time.Now().Unix()),
@@ -67,14 +65,14 @@ func New(config config.Config) *Client {
 	}
 }
 
-func (client *Client) HandShake(_ context.Context, _ []byte) ([]byte, error) {
+func (client *stubClient) HandShake(_ context.Context, _ []byte) ([]byte, error) {
 	client.mu.Lock()
 	defer client.mu.Unlock()
 
 	return client.buildHelloResponse(), nil
 }
 
-func (client *Client) Send(_ context.Context, request []byte) ([]byte, error) {
+func (client *stubClient) Send(_ context.Context, request []byte) ([]byte, error) {
 	client.mu.Lock()
 	defer client.mu.Unlock()
 
@@ -102,7 +100,7 @@ func (client *Client) Send(_ context.Context, request []byte) ([]byte, error) {
 	return client.buildRPCResponse(miioRequest.ID, response), nil
 }
 
-func (client *Client) handleRequest(request miiorequest.MIIORequest) (json.RawMessage, error) {
+func (client *stubClient) handleRequest(request miiorequest.MIIORequest) (json.RawMessage, error) {
 	switch request.Method {
 	case string(constant.MIIOMethodGetProp):
 		return client.handleGetProperties(request.Params)
@@ -117,7 +115,7 @@ func (client *Client) handleRequest(request miiorequest.MIIORequest) (json.RawMe
 	}
 }
 
-func (client *Client) handleGetProperties(params any) (json.RawMessage, error) {
+func (client *stubClient) handleGetProperties(params any) (json.RawMessage, error) {
 	properties, _ := params.([]any)
 	results := make([]any, 0, len(properties))
 
@@ -128,7 +126,7 @@ func (client *Client) handleGetProperties(params any) (json.RawMessage, error) {
 	return json.Marshal(results)
 }
 
-func (client *Client) handleSetPower(params any) (json.RawMessage, error) {
+func (client *stubClient) handleSetPower(params any) (json.RawMessage, error) {
 	values, _ := params.([]any)
 	if len(values) > 0 {
 		client.state.Power = toString(values[0])
@@ -143,7 +141,7 @@ func (client *Client) handleSetPower(params any) (json.RawMessage, error) {
 	return json.Marshal([]string{"ok"})
 }
 
-func (client *Client) handleSetMode(params any) (json.RawMessage, error) {
+func (client *stubClient) handleSetMode(params any) (json.RawMessage, error) {
 	values, _ := params.([]any)
 	if len(values) > 0 {
 		client.state.Mode = toString(values[0])
@@ -153,7 +151,7 @@ func (client *Client) handleSetMode(params any) (json.RawMessage, error) {
 	return json.Marshal([]string{"ok"})
 }
 
-func (client *Client) handleSetFavoriteLevel(params any) (json.RawMessage, error) {
+func (client *stubClient) handleSetFavoriteLevel(params any) (json.RawMessage, error) {
 	values, _ := params.([]any)
 	if len(values) > 0 {
 		client.state.FavoriteLevel = toInt(values[0])
@@ -163,7 +161,7 @@ func (client *Client) handleSetFavoriteLevel(params any) (json.RawMessage, error
 	return json.Marshal([]string{"ok"})
 }
 
-func (client *Client) propertyValue(property string) any {
+func (client *stubClient) propertyValue(property string) any {
 	switch property {
 	case "power":
 		return client.state.Power
@@ -200,7 +198,7 @@ func (client *Client) propertyValue(property string) any {
 	}
 }
 
-func (client *Client) updateMotorSpeed() {
+func (client *stubClient) updateMotorSpeed() {
 	if client.state.Power != "on" {
 		client.state.MotorSpeed = 0
 		return
@@ -218,7 +216,7 @@ func (client *Client) updateMotorSpeed() {
 	}
 }
 
-func (client *Client) buildHelloResponse() []byte {
+func (client *stubClient) buildHelloResponse() []byte {
 	response := make([]byte, 32)
 	binary.BigEndian.PutUint16(response[0:2], 0x2131)
 	binary.BigEndian.PutUint16(response[2:4], 32)
@@ -227,7 +225,7 @@ func (client *Client) buildHelloResponse() []byte {
 	return response
 }
 
-func (client *Client) buildRPCResponse(requestID int64, result json.RawMessage) []byte {
+func (client *stubClient) buildRPCResponse(requestID int64, result json.RawMessage) []byte {
 	response := miioresponse.MIIOResponse{
 		ID:     requestID,
 		Result: result,

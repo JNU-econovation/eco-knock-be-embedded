@@ -8,24 +8,24 @@ import (
 	"eco-knock-be-embedded/internal/airpurifier/xiaomi/util"
 )
 
-type Client struct {
+type realClient struct {
 	config config.Config
 }
 
-func New(config config.Config) *Client {
-	return &Client{
+func newRealClient(config config.Config) (Requester, error) {
+	return &realClient{
 		config: config,
-	}
+	}, nil
 }
 
-func (client *Client) HandShake(
+func (client *realClient) HandShake(
 	ctx context.Context,
 	helloPacket []byte,
 ) ([]byte, error) {
 	return util.RequestReply(ctx, client.config.Address, helloPacket, client.config.Timeout)
 }
 
-func (client *Client) Send(
+func (client *realClient) Send(
 	ctx context.Context,
 	request []byte,
 ) ([]byte, error) {

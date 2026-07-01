@@ -73,7 +73,7 @@ func startSensorGRPCServer(grpcServer *grpc.Server, commonConfig commonconfig.Co
 		return nil, err
 	}
 
-	sensorReader, err := bme680reader.Open(runtimeConfig.readerConfig)
+	sensorReader, err := bme680reader.Open(runtimeConfig.readerConfig, runtimeConfig.readerMode)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func startLightSensorGRPCServer(grpcServer *grpc.Server, commonConfig commonconf
 		return nil, err
 	}
 
-	lightSensorReader, err := veml7700reader.Open(runtimeConfig.readerConfig)
+	lightSensorReader, err := veml7700reader.Open(runtimeConfig.readerConfig, runtimeConfig.readerMode)
 	if err != nil {
 		return nil, err
 	}
@@ -165,15 +165,15 @@ func startLightSensorGRPCServer(grpcServer *grpc.Server, commonConfig commonconf
 }
 
 func startAirPurifierGRPCServer(grpcServer *grpc.Server, commonConfig commonconfig.CommonConfig) (func(), error) {
-	conf, ok, err := resolveAirPurifierConfig(commonConfig)
+	runtimeConfig, err := resolveAirPurifierConfig(commonConfig)
 	if err != nil {
 		return nil, err
 	}
-	if !ok {
+	if !runtimeConfig.enabled {
 		return func() {}, nil
 	}
 
-	airPurifierService, err := airservice.New(conf)
+	airPurifierService, err := airservice.NewWithClientMode(runtimeConfig.config, runtimeConfig.clientMode, nil)
 	if err != nil {
 		return nil, err
 	}

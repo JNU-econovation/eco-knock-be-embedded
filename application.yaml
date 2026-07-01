@@ -9,6 +9,7 @@ central_backend:
   allow_failure: ${ALLOW_CENTRAL_BACKEND_FAILURE}
 
 sensor:
+  reader_mode: ${SENSOR_READER_MODE}
   i2c_device: ${SENSOR_I2C_DEVICE}
   i2c_address: ${SENSOR_I2C_ADDRESS}
   state_db_path: data/sensor_state.db
@@ -25,11 +26,13 @@ sensor:
     learning_valid_sample_goal: 3600
 
 light_sensor:
+  reader_mode: ${LIGHT_SENSOR_READER_MODE}
   i2c_device: ${LIGHT_SENSOR_I2C_DEVICE}
   i2c_address: ${LIGHT_SENSOR_I2C_ADDRESS}
   poll_interval: 1s
 
 air_purifier:
+  client_mode: ${AIR_PURIFIER_CLIENT_MODE}
   address: ${AIR_PURIFIER_ADDRESS}
   token: ${AIR_PURIFIER_TOKEN}
   timeout: ${AIR_PURIFIER_TIMEOUT}

@@ -8,6 +8,7 @@ import (
 )
 
 type sensorRuntimeConfig struct {
+	readerMode       string
 	readerConfig     bme680config.Config
 	airQualityConfig airqualityconfig.AirQualityConfig
 	serviceConfig    sensorconfig.SensorServiceConfig
@@ -22,8 +23,10 @@ func resolveSensorRuntimeConfig(commonConfig commonconfig.CommonConfig) (sensorR
 		HeaterDuration: commonConfig.SensorHeaterDuration,
 		AmbientTempC:   commonConfig.SensorAmbientTempC,
 	}
-	if err := readerConfig.Validate(); err != nil {
-		return sensorRuntimeConfig{}, err
+	if commonConfig.SensorReaderMode == commonconfig.ReaderModeReal {
+		if err := readerConfig.Validate(); err != nil {
+			return sensorRuntimeConfig{}, err
+		}
 	}
 
 	airQualityConfig := airqualityconfig.AirQualityConfig{
@@ -46,6 +49,7 @@ func resolveSensorRuntimeConfig(commonConfig commonconfig.CommonConfig) (sensorR
 	}
 
 	return sensorRuntimeConfig{
+		readerMode:       commonConfig.SensorReaderMode,
 		readerConfig:     readerConfig,
 		airQualityConfig: airQualityConfig,
 		serviceConfig:    serviceConfig,

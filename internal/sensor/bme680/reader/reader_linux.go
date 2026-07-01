@@ -1,4 +1,4 @@
-//go:build linux && !sensor_stub
+//go:build linux
 
 package reader
 
@@ -100,9 +100,9 @@ const (
 	maxHeaterTemp = 400
 )
 
-var ErrSensorClosed = errors.New("BME680 센서가 이미 종료되었습니다")
+var errRealSensorClosed = errors.New("BME680 센서가 이미 종료되었습니다")
 
-type Sensor struct {
+type realSensor struct {
 	mu      sync.Mutex
 	bus     i2c.BusCloser
 	dev     *i2c.Dev
@@ -147,7 +147,7 @@ type calibrationData struct {
 	rangeSwErr   int8
 }
 
-func Open(cfg bme680config.Config) (*Sensor, error) {
+func openReal(cfg bme680config.Config) (*realSensor, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func Open(cfg bme680config.Config) (*Sensor, error) {
 		return nil, fmt.Errorf("I2C 버스 %d 열기에 실패했습니다: %w", busNumber, err)
 	}
 
-	sensor := &Sensor{
+	sensor := &realSensor{
 		bus:    bus,
 		dev:    &i2c.Dev{Bus: bus, Addr: uint16(cfg.I2CAddress)},
 		config: cfg,
@@ -176,12 +176,12 @@ func Open(cfg bme680config.Config) (*Sensor, error) {
 	return sensor, nil
 }
 
-func (sensor *Sensor) Read() (dto.SampleDTO, error) {
+func (sensor *realSensor) Read() (dto.SampleDTO, error) {
 	sensor.mu.Lock()
 	defer sensor.mu.Unlock()
 
 	if sensor.closed {
-		return dto.SampleDTO{}, ErrSensorClosed
+		return dto.SampleDTO{}, errRealSensorClosed
 	}
 
 	if err := sensor.setOpMode(forcedMode); err != nil {
@@ -199,7 +199,7 @@ func (sensor *Sensor) Read() (dto.SampleDTO, error) {
 	return sample, nil
 }
 
-func (sensor *Sensor) Close() error {
+func (sensor *realSensor) Close() error {
 	sensor.mu.Lock()
 	defer sensor.mu.Unlock()
 
@@ -211,7 +211,7 @@ func (sensor *Sensor) Close() error {
 	return sensor.bus.Close()
 }
 
-func (sensor *Sensor) init() error {
+func (sensor *realSensor) init() error {
 	if err := sensor.softReset(); err != nil {
 		return err
 	}
@@ -245,7 +245,7 @@ func (sensor *Sensor) init() error {
 	return nil
 }
 
-func (sensor *Sensor) softReset() error {
+func (sensor *realSensor) softReset() error {
 	if err := sensor.writeReg(regSoftReset, softResetCommand); err != nil {
 		return fmt.Errorf("소프트 리셋에 실패했습니다: %w", err)
 	}
@@ -254,7 +254,7 @@ func (sensor *Sensor) softReset() error {
 	return nil
 }
 
-func (sensor *Sensor) loadCalibrationData() error {
+func (sensor *realSensor) loadCalibrationData() error {
 	coeff := make([]byte, 42)
 
 	if err := sensor.readRegs(regCoeff1, coeff[:23]); err != nil {
@@ -301,7 +301,7 @@ func (sensor *Sensor) loadCalibrationData() error {
 	return nil
 }
 
-func (sensor *Sensor) applySensorConfig() error {
+func (sensor *realSensor) applySensorConfig() error {
 	if err := sensor.setOpMode(sleepMode); err != nil {
 		return err
 	}
@@ -335,7 +335,7 @@ func (sensor *Sensor) applySensorConfig() error {
 	return nil
 }
 
-func (sensor *Sensor) applyHeaterConfig() error {
+func (sensor *realSensor) applyHeaterConfig() error {
 	if err := sensor.setOpMode(sleepMode); err != nil {
 		return err
 	}
@@ -372,7 +372,7 @@ func (sensor *Sensor) applyHeaterConfig() error {
 	return nil
 }
 
-func (sensor *Sensor) setOpMode(mode byte) error {
+func (sensor *realSensor) setOpMode(mode byte) error {
 	for {
 		ctrlMeas, err := sensor.readReg(regCtrlMeas)
 		if err != nil {
@@ -401,14 +401,14 @@ func (sensor *Sensor) setOpMode(mode byte) error {
 	}
 }
 
-func (sensor *Sensor) measurementDelay() time.Duration {
+func (sensor *realSensor) measurementDelay() time.Duration {
 	osToMeasCycles := [...]uint32{0, 1, 2, 4, 8, 16}
 	measCycles := osToMeasCycles[os2x] + osToMeasCycles[os1x] + osToMeasCycles[os16x]
 	durationUs := measCycles*1963 + 477*4 + 477*5 + 1000
 	return time.Duration(durationUs)*time.Microsecond + sensor.config.HeaterDuration
 }
 
-func (sensor *Sensor) readFieldData() (dto.SampleDTO, error) {
+func (sensor *realSensor) readFieldData() (dto.SampleDTO, error) {
 	var field [fieldLength]byte
 
 	for i := 0; i < fieldRetries; i++ {
@@ -463,7 +463,7 @@ func (sensor *Sensor) readFieldData() (dto.SampleDTO, error) {
 	return dto.SampleDTO{}, errors.New("BME680이 새 데이터를 반환하지 않았습니다")
 }
 
-func (sensor *Sensor) calcTemperature(adc uint32) float64 {
+func (sensor *realSensor) calcTemperature(adc uint32) float64 {
 	var1 := ((float64(adc) / 16384.0) - (float64(sensor.calib.parT1) / 1024.0)) * float64(sensor.calib.parT2)
 	var2 := ((float64(adc)/131072.0 - float64(sensor.calib.parT1)/8192.0) *
 		(float64(adc)/131072.0 - float64(sensor.calib.parT1)/8192.0)) * (float64(sensor.calib.parT3) * 16.0)
@@ -471,7 +471,7 @@ func (sensor *Sensor) calcTemperature(adc uint32) float64 {
 	return sensor.calib.tFine / 5120.0
 }
 
-func (sensor *Sensor) calcHumidity(adc uint16) float64 {
+func (sensor *realSensor) calcHumidity(adc uint16) float64 {
 	tempComp := sensor.calib.tFine / 5120.0
 	var1 := float64(adc) - ((float64(sensor.calib.parH1) * 16.0) + (float64(sensor.calib.parH3)/2.0)*tempComp)
 	var2 := var1 * ((float64(sensor.calib.parH2) / 262144.0) *
@@ -490,7 +490,7 @@ func (sensor *Sensor) calcHumidity(adc uint16) float64 {
 	}
 }
 
-func (sensor *Sensor) calcGasResistanceLow(adc uint16, gasRange byte) float64 {
+func (sensor *realSensor) calcGasResistanceLow(adc uint16, gasRange byte) float64 {
 	lookupK1 := [...]float64{0, 0, 0, 0, 0, -1, 0, -0.8, 0, 0, -0.2, -0.5, 0, -1, 0, 0}
 	lookupK2 := [...]float64{0, 0, 0, 0, 0.1, 0.7, 0, -0.8, -0.1, 0, 0, 0, 0, 0, 0, 0}
 
@@ -508,7 +508,7 @@ func calcGasResistanceHigh(adc uint16, gasRange byte) float64 {
 	return 1000000.0 * var1 / var2
 }
 
-func (sensor *Sensor) calcResHeat(temp uint16) byte {
+func (sensor *realSensor) calcResHeat(temp uint16) byte {
 	if temp > maxHeaterTemp {
 		temp = maxHeaterTemp
 	}
@@ -530,14 +530,14 @@ func (sensor *Sensor) calcResHeat(temp uint16) byte {
 	return byte(resHeat)
 }
 
-func (sensor *Sensor) runGasValue() byte {
+func (sensor *realSensor) runGasValue() byte {
 	if sensor.variant == variantGasHigh {
 		return enableGasMeasureHigh
 	}
 	return enableGasMeasureLow
 }
 
-func (sensor *Sensor) readReg(reg byte) (byte, error) {
+func (sensor *realSensor) readReg(reg byte) (byte, error) {
 	var data [1]byte
 	if err := sensor.readRegs(reg, data[:]); err != nil {
 		return 0, err
@@ -545,11 +545,11 @@ func (sensor *Sensor) readReg(reg byte) (byte, error) {
 	return data[0], nil
 }
 
-func (sensor *Sensor) readRegs(reg byte, out []byte) error {
+func (sensor *realSensor) readRegs(reg byte, out []byte) error {
 	return sensor.dev.Tx([]byte{reg}, out)
 }
 
-func (sensor *Sensor) writeReg(reg, value byte) error {
+func (sensor *realSensor) writeReg(reg, value byte) error {
 	return sensor.dev.Tx([]byte{reg, value}, nil)
 }
 

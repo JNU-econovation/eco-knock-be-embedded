@@ -3,6 +3,7 @@ package test
 import (
 	"context"
 	"crypto/md5"
+	"eco-knock-be-embedded/internal/airpurifier/xiaomi/client"
 	airconfig "eco-knock-be-embedded/internal/airpurifier/xiaomi/config"
 	"eco-knock-be-embedded/internal/airpurifier/xiaomi/constant"
 	"eco-knock-be-embedded/internal/airpurifier/xiaomi/service"
@@ -186,11 +187,11 @@ func TestSetFavoriteLevelRejectsOutOfRange(t *testing.T) {
 		t.Fatalf("unexpected new config error: %v", err)
 	}
 
-	airPurifierService, err := service.New(service.Config{
+	airPurifierService, err := service.NewWithClientMode(service.Config{
 		Address: conf.Address,
 		Token:   conf.Token,
 		Timeout: conf.Timeout,
-	})
+	}, client.ModeStub, nil)
 	if err != nil {
 		t.Fatalf("unexpected new service error: %v", err)
 	}

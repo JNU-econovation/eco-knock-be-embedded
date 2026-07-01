@@ -6,6 +6,7 @@ import (
 )
 
 type lightSensorRuntimeConfig struct {
+	readerMode   string
 	readerConfig veml7700config.Config
 }
 
@@ -15,11 +16,14 @@ func resolveLightSensorRuntimeConfig(commonConfig commonconfig.CommonConfig) (li
 		I2CAddress:   commonConfig.LightSensorI2CAddress,
 		PollInterval: commonConfig.LightSensorPollInterval,
 	}
-	if err := readerConfig.Validate(); err != nil {
-		return lightSensorRuntimeConfig{}, err
+	if commonConfig.LightSensorReaderMode == commonconfig.ReaderModeReal {
+		if err := readerConfig.Validate(); err != nil {
+			return lightSensorRuntimeConfig{}, err
+		}
 	}
 
 	return lightSensorRuntimeConfig{
+		readerMode:   commonConfig.LightSensorReaderMode,
 		readerConfig: readerConfig,
 	}, nil
 }
