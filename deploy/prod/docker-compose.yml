@@ -1,17 +1,19 @@
+name: eco-knock-embedded-prod
+
 services:
   server:
-    platform: ${DOCKER_PLATFORM:-linux/arm64}
-    image: eco-knock-be-embedded:arm64
+    image: ${IMAGE_NAME:-ghcr.io/jnu-econovation/eco-knock-be-embedded:latest}
     restart: unless-stopped
     user: "0:0"
     env_file:
-      - .env
+      - ${APP_ENV_FILE:-.env}
     devices:
       - /dev/i2c-1:/dev/i2c-1
     volumes:
       - ./data:/app/data
     ports:
       - "${SERVER_HTTP_PORT}:${SERVER_HTTP_PORT}"
+      - "${SERVER_GRPC_PORT}:${SERVER_GRPC_PORT}"
 
   node-exporter:
     image: quay.io/prometheus/node-exporter:latest
